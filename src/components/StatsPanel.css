@@ -1,0 +1,95 @@
+.stats-panel {
+  padding: 20px;
+  border-top: 1px solid #eee;
+}
+
+.stats-panel h3 {
+  margin: 0 0 12px 0;
+  font-size: 16px;
+  color: #2c3e50;
+}
+
+.stats-summary {
+  margin-bottom: 16px;
+}
+
+.stats-total {
+  font-size: 14px;
+  color: #666;
+  background: #f8f9fa;
+  padding: 6px 12px;
+  border-radius: 6px;
+  display: inline-block;
+}
+
+.stats-section {
+  margin-bottom: 16px;
+}
+
+.stats-section h4 {
+  font-size: 13px;
+  color: #555;
+  margin: 0 0 8px 0;
+  font-weight: 600;
+}
+
+.level-bars,
+.species-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.level-bar-row,
+.species-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.level-bar-label,
+.species-bar-label {
+  min-width: 70px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.species-bar-label {
+  min-width: 90px;
+}
+
+.level-bar-dot,
+.species-bar-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.level-bar-track,
+.species-bar-track {
+  flex: 1;
+  height: 14px;
+  background: #f0f0f0;
+  border-radius: 7px;
+  overflow: hidden;
+}
+
+.level-bar-fill,
+.species-bar-fill {
+  height: 100%;
+  border-radius: 7px;
+  min-width: 4px;
+  transition: width 0.3s ease;
+}
+
+.level-bar-count,
+.species-bar-count {
+  min-width: 24px;
+  text-align: right;
+  color: #666;
+  font-size: 12px;
+}
