@@ -4,8 +4,22 @@ import FilterPanel from './components/FilterPanel';
 import StatsPanel from './components/StatsPanel';
 import { fetchTreeData } from './services/api';
 import { filterData, getUniqueCities, getUniqueSpecies, calculateStats } from './utils/helpers';
+import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import 'react-leaflet-cluster/dist/assets/MarkerCluster.css';
+import 'react-leaflet-cluster/dist/assets/MarkerCluster.Default.css';
+import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
+import markerIcon from 'leaflet/dist/images/marker-icon.png';
+import markerShadow from 'leaflet/dist/images/marker-shadow.png';
 import './App.css';
+
+// Leaflet 기본 마커 아이콘 경로 수정
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: markerIcon2x,
+  iconUrl: markerIcon,
+  shadowUrl: markerShadow,
+});
 
 function App() {
   const [rawData, setRawData] = useState([]);
