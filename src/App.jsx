@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import Map from './components/Map';
 import FilterPanel from './components/FilterPanel';
 import StatsPanel from './components/StatsPanel';
+import CsvUploader from './components/CsvUploader';
 import { fetchTreeData } from './services/api';
 import { filterData, getUniqueCities, getUniqueSpecies, calculateStats } from './utils/helpers';
 import L from 'leaflet';
@@ -105,6 +106,13 @@ function App() {
             speciesList={speciesList}
           />
           <StatsPanel stats={stats} />
+          <CsvUploader
+            onDataLoaded={(items) => {
+              setRawData(items);
+              setIsSample(false);
+              setFilters({ city: '', species: '', allergenLevels: [], allergenOnly: false });
+            }}
+          />
         </aside>
 
         <main className="main-content">
