@@ -13,7 +13,7 @@ function MapViewController({ center, zoom }) {
   return null;
 }
 
-export default function Map({ data, mapCenter, mapZoom }) {
+export default function Map({ data, mapCenter, mapZoom, onStreetViewClick }) {
   const defaultCenter = [36.5, 127.5]; // 대한민국 중앙
   const defaultZoom = 7;
 
@@ -38,7 +38,7 @@ export default function Map({ data, mapCenter, mapZoom }) {
           showCoverageOnHover={false}
         >
           {data.map((item, index) => (
-            <TreeMarker key={item.id || index} data={item} />
+            <TreeMarker key={item.id || index} data={item} onStreetViewClick={onStreetViewClick} />
           ))}
         </MarkerClusterGroup>
         <Legend />
