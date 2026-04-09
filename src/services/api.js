@@ -73,7 +73,7 @@ export async function fetchTreeData({ city, district, pageNo = 1, numOfRows = 10
     totalCount: parseInt(body?.totalCount, 10) || 0,
     pageNo: parseInt(body?.pageNo, 10) || 1,
     numOfRows: parseInt(body?.numOfRows, 10) || numOfRows,
-    isample: false,
+    issample: false,
   };
 }
 
@@ -81,30 +81,35 @@ export async function fetchTreeData({ city, district, pageNo = 1, numOfRows = 10
 export async function fetchAllTreeData({ city, district } = {}) {
   const firstPage = await fetchTreeData({ city, district, pageNo: 1, numOfRows: 1000 });
 
-  if (firstPage.isample || firstPage.isample === undefined) {
+  if (firstPage.issample) {
     return firstPage;
   }
 
   const allItems = [...firstPage.items];
   const totalPages = Math.ceil(firstPage.totalCount / 1000);
 
-  // 나머지 페이지를 병렬로 가져옴 (최대 10페이지)
-  const maxPages = Math.min(totalPages, 10);
-  const promises = [];
-  for (let page = 2; page <= maxPages; page++) {
-    promises.push(fetchTreeData({ city, district, pageNo: page, numOfRows: 1000 }));
-  }
+  // 나머지 페이지를 배치로 가져옴 (최대 50페이지, 5개씩 병렬)
+  const maxPages = Math.min(totalPages, 50);
+  const BATCH_SIZE = 5;
 
-  const results = await Promise.allSettled(promises);
-  for (const result of results) {
-    if (result.status === 'fulfilled') {
-      allItems.push(...result.value.items);
+  for (let batchStart = 2; batchStart <= maxPages; batchStart += BATCH_SIZE) {
+    const batchEnd = Math.min(batchStart + BATCH_SIZE - 1, maxPages);
+    const promises = [];
+    for (let page = batchStart; page <= batchEnd; page++) {
+      promises.push(fetchTreeData({ city, district, pageNo: page, numOfRows: 1000 }));
+    }
+
+    const results = await Promise.allSettled(promises);
+    for (const result of results) {
+      if (result.status === 'fulfilled') {
+        allItems.push(...result.value.items);
+      }
     }
   }
 
   return {
     items: allItems,
     totalCount: firstPage.totalCount,
-    isample: false,
+    issample: false,
   };
 }

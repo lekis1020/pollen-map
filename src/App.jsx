@@ -5,6 +5,7 @@ import FilterPanel from './components/FilterPanel';
 import StatsPanel from './components/StatsPanel';
 import CsvUploader from './components/CsvUploader';
 import { fetchTreeData } from './services/api';
+import { fetchFromAdditionalSources } from './services/dataSources';
 import { filterData, getUniqueCities, getUniqueSpecies, calculateStats } from './utils/helpers';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -44,8 +45,20 @@ function App() {
         setLoading(true);
         setError(null);
         const result = await fetchTreeData();
-        setRawData(result.items);
+        let allItems = result.items;
         setIsSample(!!result.issample);
+
+        // 추가 데이터 소스에서 병합 (API 키가 설정된 경우)
+        try {
+          const additionalItems = await fetchFromAdditionalSources();
+          if (additionalItems.length > 0) {
+            allItems = [...allItems, ...additionalItems];
+          }
+        } catch {
+          // 추가 소스 실패 시 기본 데이터만 사용
+        }
+
+        setRawData(allItems);
       } catch (err) {
         setError(err.message);
       } finally {
