@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import Map from './components/Map';
+import StreetViewModal from './components/StreetViewModal';
 import FilterPanel from './components/FilterPanel';
 import StatsPanel from './components/StatsPanel';
 import CsvUploader from './components/CsvUploader';
@@ -28,6 +29,7 @@ function App() {
   const [error, setError] = useState(null);
   const [isSample, setIsSample] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [streetViewTree, setStreetViewTree] = useState(null);
   const [filters, setFilters] = useState({
     city: '',
     species: '',
@@ -130,10 +132,17 @@ function App() {
               <p>가로수길 데이터를 불러오는 중...</p>
             </div>
           ) : (
-            <Map data={filteredData} />
+            <Map data={filteredData} onStreetViewClick={setStreetViewTree} />
           )}
         </main>
       </div>
+
+      {streetViewTree && (
+        <StreetViewModal
+          treeData={streetViewTree}
+          onClose={() => setStreetViewTree(null)}
+        />
+      )}
     </div>
   );
 }

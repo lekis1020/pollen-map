@@ -29,7 +29,7 @@ function getIcon(level) {
   return iconCache[level];
 }
 
-export default function TreeMarker({ data }) {
+export default function TreeMarker({ data, onStreetViewClick }) {
   const level = getAllergenLevel(data.species);
   const allergenInfo = getAllergenInfo(data.species);
   const levelInfo = ALLERGEN_LEVELS[level];
@@ -87,6 +87,17 @@ export default function TreeMarker({ data }) {
               )}
             </tbody>
           </table>
+          {onStreetViewClick && (
+            <button
+              className="street-view-btn"
+              onClick={(e) => {
+                e.stopPropagation();
+                onStreetViewClick(data);
+              }}
+            >
+              로드뷰 보기
+            </button>
+          )}
         </div>
       </Popup>
     </Marker>
