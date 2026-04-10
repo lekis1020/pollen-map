@@ -1,4 +1,5 @@
 import { ALLERGEN_LEVELS } from '../data/allergenDatabase';
+import { SOURCE_LIST } from '../services/dataSources';
 import './FilterPanel.css';
 
 export default function FilterPanel({
@@ -6,7 +7,16 @@ export default function FilterPanel({
   onFilterChange,
   cities,
   speciesList,
+  sourceCounts,
 }) {
+  const handleSourceToggle = (sourceId) => {
+    const current = filters.sourceTypes || [];
+    const updated = current.includes(sourceId)
+      ? current.filter((s) => s !== sourceId)
+      : [...current, sourceId];
+    onFilterChange({ ...filters, sourceTypes: updated });
+  };
+
   const handleCityChange = (e) => {
     onFilterChange({ ...filters, city: e.target.value || '' });
   };
@@ -33,6 +43,7 @@ export default function FilterPanel({
       species: '',
       allergenLevels: [],
       allergenOnly: false,
+      sourceTypes: [],
     });
   };
 
@@ -43,6 +54,33 @@ export default function FilterPanel({
         <button className="reset-btn" onClick={handleReset}>
           초기화
         </button>
+      </div>
+
+      <div className="filter-section">
+        <label className="filter-label">데이터 소스</label>
+        <div className="source-checkboxes">
+          {SOURCE_LIST.map((source) => {
+            const count = sourceCounts?.[source.id] || 0;
+            const active = !filters.sourceTypes?.length || filters.sourceTypes.includes(source.id);
+            return (
+              <label key={source.id} className={`source-checkbox ${active ? 'active' : ''}`}>
+                <input
+                  type="checkbox"
+                  checked={(filters.sourceTypes || []).includes(source.id)}
+                  onChange={() => handleSourceToggle(source.id)}
+                />
+                <span
+                  className="source-dot"
+                  style={{ backgroundColor: source.color }}
+                />
+                <span className="source-name">{source.label}</span>
+                {count > 0 && (
+                  <span className="source-count">({count.toLocaleString()})</span>
+                )}
+              </label>
+            );
+          })}
+        </div>
       </div>
 
       <div className="filter-section">

@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { ALLERGEN_LEVELS } from '../data/allergenDatabase';
+import { SOURCE_LIST } from '../services/dataSources';
 
 export default function Legend() {
   const map = useMap();
@@ -20,6 +21,16 @@ export default function Legend() {
               `<div class="legend-item">
                 <span class="legend-color" style="background:${info.color}"></span>
                 <span>${info.label}</span>
+              </div>`
+          )
+          .join('')}
+        <h4 style="margin-top:8px">데이터 소스</h4>
+        ${SOURCE_LIST
+          .map(
+            (source) =>
+              `<div class="legend-item">
+                <span class="legend-color" style="background:${source.color}"></span>
+                <span>${source.label}</span>
               </div>`
           )
           .join('')}

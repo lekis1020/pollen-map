@@ -12,7 +12,27 @@ export const ALLERGEN_LEVELS = {
 // 수종별 알레르기 정보
 // keywords: 공공데이터에서 해당 수종으로 매칭할 키워드들
 export const ALLERGEN_DATABASE = [
-  // === 매우 높음 (4) ===
+  // === 매우 높음 (4) - 풀/잡초 ===
+  {
+    name: '쑥',
+    englishName: 'Mugwort',
+    scientificName: 'Artemisia princeps',
+    level: 4,
+    pollenMonths: [8, 9, 10],
+    symptoms: '비염, 결막염, 천식, 피부염 (한국 가을철 주요 알레르기 원인)',
+    keywords: ['쑥', '개똥쑥', '참쑥', '사철쑥'],
+  },
+  {
+    name: '돼지풀',
+    englishName: 'Ragweed',
+    scientificName: 'Ambrosia artemisiifolia',
+    level: 4,
+    pollenMonths: [8, 9, 10],
+    symptoms: '비염, 결막염, 천식 (매우 강한 알레르기 유발)',
+    keywords: ['돼지풀', '단풍잎돼지풀', '두드러기풀'],
+  },
+
+  // === 매우 높음 (4) - 나무 ===
   {
     name: '자작나무',
     englishName: 'Birch',
@@ -50,7 +70,36 @@ export const ALLERGEN_DATABASE = [
     keywords: ['편백', '편백나무'],
   },
 
-  // === 높음 (3) ===
+  // === 높음 (3) - 풀/잡초 ===
+  {
+    name: '잔디',
+    englishName: 'Grass',
+    scientificName: 'Poaceae spp.',
+    level: 3,
+    pollenMonths: [5, 6, 7, 8],
+    symptoms: '비염, 결막염, 천식 (화본과 꽃가루 알레르기)',
+    keywords: ['잔디', '잔디밭', '우산잔디', '켄터키블루그래스', '라이그래스', '티모시'],
+  },
+  {
+    name: '환삼덩굴',
+    englishName: 'Japanese Hop',
+    scientificName: 'Humulus scandens',
+    level: 3,
+    pollenMonths: [8, 9],
+    symptoms: '비염, 결막염, 천식',
+    keywords: ['환삼덩굴'],
+  },
+  {
+    name: '향나무',
+    englishName: 'Juniper',
+    scientificName: 'Juniperus chinensis',
+    level: 3,
+    pollenMonths: [3, 4],
+    symptoms: '비염, 결막염',
+    keywords: ['향나무', '눈향나무', '가이즈카향나무'],
+  },
+
+  // === 높음 (3) - 나무 ===
   {
     name: '플라타너스',
     englishName: 'Platanus / Sycamore',
@@ -144,7 +193,36 @@ export const ALLERGEN_DATABASE = [
     keywords: ['물푸레나무', '물푸레', '들메나무'],
   },
 
-  // === 낮음 (1) ===
+  // === 낮음 (1) - 관상식물 ===
+  {
+    name: '개나리',
+    englishName: 'Forsythia',
+    scientificName: 'Forsythia koreana',
+    level: 1,
+    pollenMonths: [3, 4],
+    symptoms: '거의 없음 (충매화)',
+    keywords: ['개나리'],
+  },
+  {
+    name: '무궁화',
+    englishName: 'Rose of Sharon',
+    scientificName: 'Hibiscus syriacus',
+    level: 1,
+    pollenMonths: [7, 8, 9],
+    symptoms: '거의 없음 (충매화)',
+    keywords: ['무궁화'],
+  },
+  {
+    name: '진달래',
+    englishName: 'Azalea',
+    scientificName: 'Rhododendron mucronulatum',
+    level: 1,
+    pollenMonths: [4, 5],
+    symptoms: '경미한 비염 (충매화)',
+    keywords: ['진달래', '철쭉', '영산홍'],
+  },
+
+  // === 낮음 (1) - 나무 ===
   {
     name: '벚나무',
     englishName: 'Cherry Blossom',
