@@ -41,14 +41,20 @@ function App() {
           return;
         }
 
-        // 2. 캐시 없음: 첫 페이지 즉시 표시 → 나머지 완료 후 한 번에 업데이트
+        // 2. 캐시 없음: 첫 페이지 즉시 표시 → 나머지 완료 후 추가
         setLoading(true);
         const result = await fetchAllData((firstPage) => {
           setRawData(firstPage.items);
           setLoading(false);
         });
-        setRawData(result.items);
-        setCachedData(result.items);
+        // 기존 마커 유지, 새 아이템만 추가 (전체 교체 시 클러스터링 에러 방지)
+        setRawData((prev) => {
+          const existingIds = new Set(prev.map(i => i.id));
+          const newItems = result.items.filter(i => !existingIds.has(i.id));
+          const merged = newItems.length > 0 ? [...prev, ...newItems] : prev;
+          setCachedData(merged);
+          return merged;
+        });
       } catch (err) {
         setError(err.message);
       } finally {
