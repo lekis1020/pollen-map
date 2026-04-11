@@ -8,21 +8,32 @@ function getApiKey() {
   return import.meta.env.VITE_DATA_API_KEY;
 }
 
+// 고유 ID 생성용 카운터
+let idCounter = 0;
+
 // API 응답을 통일된 형식으로 변환
 function normalizeItem(item) {
+  idCounter++;
   // 실제 API 필드 (tn_pubr_public_sttree_stret_api)
   if (item.sttreeStretNm || item.sttreeKnd) {
     const city = item.insttNm?.split(' ')[0] || '';
     const district = item.insttNm?.split(' ').slice(1).join(' ') || '';
+    // 시작점과 끝점의 중간점을 사용 (도로 중앙에 더 가깝게 위치)
+    const startLat = parseFloat(item.startLatitude) || 0;
+    const startLng = parseFloat(item.startLongitude) || 0;
+    const endLat = parseFloat(item.endLatitude) || startLat;
+    const endLng = parseFloat(item.endLongitude) || startLng;
+    const midLat = (startLat + endLat) / 2;
+    const midLng = (startLng + endLng) / 2;
     return {
-      id: `${item.startLatitude}_${item.startLongitude}_${item.sttreeKnd || item.sttreeStretNm}`,
+      id: `api_${idCounter}_${item.startLatitude}_${item.startLongitude}`,
       roadName: item.sttreeStretNm || '',
       city,
       district,
       species: item.sttreeKnd || '',
       treeCount: parseInt(item.sttreeCo, 10) || 0,
-      latitude: parseFloat(item.startLatitude) || 0,
-      longitude: parseFloat(item.startLongitude) || 0,
+      latitude: midLat,
+      longitude: midLng,
       institution: item.institutionNm || item.insttNm || '',
       phone: item.phoneNumber || '',
       referenceDate: item.referenceDate || '',
@@ -30,7 +41,7 @@ function normalizeItem(item) {
   }
   // 샘플 데이터 필드
   return {
-    id: `${item.latitude}_${item.longitude}_${item.speciesNm || item.roadsidTreeRoadNm}`,
+    id: `sample_${idCounter}_${item.latitude}_${item.longitude}`,
     roadName: item.roadsidTreeRoadNm || '',
     city: item.ctprvnNm || '',
     district: item.signguNm || '',
