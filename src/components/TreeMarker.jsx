@@ -40,16 +40,32 @@ export default function TreeMarker({ data, onStreetViewClick }) {
   const checkedRef = useRef(false);
 
   const checkPanorama = () => {
-    if (checkedRef.current || !window.naver?.maps) return;
+    if (checkedRef.current) return;
     checkedRef.current = true;
+
+    if (!window.naver?.maps) {
+      setPanoAvailable(false);
+      return;
+    }
 
     const lat = data.startLat || data.latitude;
     const lng = data.startLng || data.longitude;
     const position = new window.naver.maps.LatLng(lat, lng);
 
     const div = document.createElement('div');
-    div.style.cssText = 'width:1px;height:1px;position:absolute;left:-9999px';
+    div.style.cssText = 'width:100px;height:100px;position:fixed;left:-9999px;top:0';
     document.body.appendChild(div);
+
+    let resolved = false;
+    const cleanup = (available) => {
+      if (resolved) return;
+      resolved = true;
+      setPanoAvailable(available);
+      try { div.remove(); } catch {}
+    };
+
+    // 2초 타임아웃 - 무조건 결과 반환
+    setTimeout(() => cleanup(false), 2000);
 
     try {
       const pano = new window.naver.maps.Panorama(div, {
@@ -57,35 +73,26 @@ export default function TreeMarker({ data, onStreetViewClick }) {
         pov: { pan: 0, tilt: 0, fov: 100 },
       });
 
-      let resolved = false;
-      const timeout = setTimeout(() => {
-        if (!resolved) { resolved = true; setPanoAvailable(false); div.remove(); }
-      }, 3000);
-
       window.naver.maps.Event.addListener(pano, 'pano_changed', () => {
-        if (resolved) return;
-        resolved = true;
-        clearTimeout(timeout);
-        const pos = pano.getPosition();
-        if (pos) {
-          const dist = position.distanceTo(pos);
-          setPanoAvailable(dist < 200);
-        } else {
-          setPanoAvailable(false);
+        try {
+          const pos = pano.getPosition();
+          if (pos) {
+            const dist = position.distanceTo(pos);
+            cleanup(dist < 200);
+          } else {
+            cleanup(false);
+          }
+        } catch {
+          cleanup(false);
         }
-        div.remove();
       });
 
-      window.naver.maps.Event.addListener(pano, 'error', () => {
-        if (resolved) return;
-        resolved = true;
-        clearTimeout(timeout);
-        setPanoAvailable(false);
-        div.remove();
+      window.naver.maps.Event.addListener(pano, 'error', () => cleanup(false));
+      window.naver.maps.Event.addListener(pano, 'pano_status', (status) => {
+        if (status !== 'OK') cleanup(false);
       });
     } catch {
-      setPanoAvailable(false);
-      div.remove();
+      cleanup(false);
     }
   };
 
