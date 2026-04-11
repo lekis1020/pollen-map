@@ -89,8 +89,8 @@ export async function fetchTreeData({ city, district, pageNo = 1, numOfRows = 10
   };
 }
 
-// 전체 데이터 로드 (모든 페이지를 가져온 후 한 번에 반환)
-export async function fetchAllData() {
+// 2단계 로드: 첫 페이지 즉시 반환 → 나머지 완료 후 콜백
+export async function fetchAllData(onFirstPage) {
   const apiKey = getApiKey();
   if (!apiKey || apiKey === 'your_api_key_here') {
     throw new Error('API 키가 설정되지 않았습니다. .env 파일에 VITE_DATA_API_KEY를 설정해주세요.');
@@ -100,8 +100,27 @@ export async function fetchAllData() {
   const allItems = [];
 
   for (const source of enabledSources) {
-    const result = await fetchAllPagesForSource(source);
-    allItems.push(...result.items);
+    // 1단계: 첫 페이지 즉시
+    const firstPage = await fetchSourcePage(source, { pageNo: 1, numOfRows: 1000 });
+    allItems.push(...firstPage.items);
+    if (onFirstPage) onFirstPage({ items: [...allItems], totalCount: firstPage.totalCount });
+
+    // 2단계: 나머지 페이지 병렬 로드
+    const totalPages = Math.ceil(firstPage.totalCount / 1000);
+    const maxPages = Math.min(totalPages, 10);
+
+    if (maxPages > 1) {
+      const promises = [];
+      for (let page = 2; page <= maxPages; page++) {
+        promises.push(fetchSourcePage(source, { pageNo: page, numOfRows: 1000 }));
+      }
+      const results = await Promise.allSettled(promises);
+      for (const result of results) {
+        if (result.status === 'fulfilled') {
+          allItems.push(...result.value.items);
+        }
+      }
+    }
   }
 
   return { items: allItems, totalCount: allItems.length };

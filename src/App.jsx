@@ -34,16 +34,19 @@ function App() {
           setLoading(false);
 
           // 백그라운드에서 API 갱신 (UI 차단 없음)
-          fetchAllData().then((result) => {
+          fetchAllData(null).then((result) => {
             setRawData(result.items);
             setCachedData(result.items);
           }).catch(() => {});
           return;
         }
 
-        // 2. 캐시 없음: 전체 데이터 로드
+        // 2. 캐시 없음: 첫 페이지 즉시 표시 → 나머지 완료 후 한 번에 업데이트
         setLoading(true);
-        const result = await fetchAllData();
+        const result = await fetchAllData((firstPage) => {
+          setRawData(firstPage.items);
+          setLoading(false);
+        });
         setRawData(result.items);
         setCachedData(result.items);
       } catch (err) {
