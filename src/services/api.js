@@ -42,7 +42,7 @@ async function fetchSourcePage(source, { city, district, pageNo = 1, numOfRows =
   const normalize = NORMALIZERS[source.id];
 
   return {
-    items: itemList.filter((item) => item.latitude && item.longitude).map(normalize),
+    items: itemList.filter((item) => (item.latitude && item.longitude) || (item.startLatitude && item.startLongitude)).map(normalize),
     totalCount: parseInt(body?.totalCount, 10) || 0,
     pageNo: parseInt(body?.pageNo, 10) || 1,
     numOfRows: parseInt(body?.numOfRows, 10) || numOfRows,

@@ -89,7 +89,7 @@
   min-height: 0;
 }
 
-/* 로딩 상태 */
+/* 로딩 상태 - 파노라마 위에 오버레이 */
 .street-view-loading {
   display: flex;
   flex-direction: column;
@@ -98,6 +98,16 @@
   height: 100%;
   gap: 12px;
   color: #888;
+}
+
+.street-view-loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 10;
+  background: #fff;
 }
 
 .street-view-spinner {

@@ -84,14 +84,18 @@ export default function StreetViewModal({ treeData, onClose }) {
           if (resolved) return;
           resolved = true;
           clearTimeout(currentTimeout);
-          const panoPos = panorama.getPosition();
-          if (panoPos) {
-            setActualPosition({ lat: panoPos.lat(), lng: panoPos.lng() });
-            const treeCenter = new window.naver.maps.LatLng(midLat, midLng);
-            const dist = treeCenter.distanceTo(panoPos);
-            setDistanceMeters(Math.round(dist));
-            setLoading(false);
+          try {
+            const panoPos = panorama.getPosition();
+            if (panoPos) {
+              setActualPosition({ lat: panoPos.lat(), lng: panoPos.lng() });
+              const treeCenter = new window.naver.maps.LatLng(midLat, midLng);
+              const dist = treeCenter.distanceTo(panoPos);
+              setDistanceMeters(Math.round(dist));
+            }
+          } catch {
+            // 위치 계산 실패 시에도 로드뷰 자체는 표시
           }
+          setLoading(false);
         });
 
         const onFail = () => {
@@ -270,13 +274,14 @@ export default function StreetViewModal({ treeData, onClose }) {
         </div>
         <div className="street-view-content">
           {loading && (
-            <div className="street-view-loading">
+            <div className="street-view-loading street-view-loading-overlay">
               <div className="street-view-spinner" />
               <p>로드뷰를 불러오는 중...</p>
             </div>
           )}
-          <div className="street-view-split" style={{ display: loading ? 'none' : 'flex' }}>
-            {error ? (
+          <div className="street-view-split">
+            <div className="street-view-panorama" ref={containerRef} style={error ? { display: 'none' } : undefined} />
+            {error && (
               <div className="street-view-fallback">
                 <div className="street-view-fallback-message">
                   <p>이 위치의 로드뷰가 촬영되지 않았습니다.</p>
@@ -288,8 +293,6 @@ export default function StreetViewModal({ treeData, onClose }) {
                   </div>
                 </div>
               </div>
-            ) : (
-              <div className="street-view-panorama" ref={containerRef} />
             )}
             <div className="street-view-minimap-wrapper">
               <div className="street-view-minimap-header">
