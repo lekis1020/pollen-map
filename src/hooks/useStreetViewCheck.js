@@ -3,7 +3,11 @@ import { useState, useEffect, useRef } from 'react';
 // In-memory cache for panorama check results (persists across renders)
 const panoCache = new Map();
 
-// Check single location for panorama availability
+// Check single location for panorama availability (exported for TreeMarker fallback)
+export function checkPanoAvailability(lat, lng) {
+  return checkPanoAt(lat, lng);
+}
+
 function checkPanoAt(lat, lng) {
   const key = `${lat.toFixed(4)},${lng.toFixed(4)}`;
   if (panoCache.has(key)) return Promise.resolve(panoCache.get(key));

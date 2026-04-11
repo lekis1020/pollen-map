@@ -1,6 +1,8 @@
+import { useState, useRef } from 'react';
 import { Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import { getAllergenInfo, getAllergenLevel, getPollenSeasonText, ALLERGEN_LEVELS } from '../data/allergenDatabase';
+import { checkPanoAvailability } from '../hooks/useStreetViewCheck';
 
 const CIRCLE_SHAPE = '<circle cx="12" cy="11" r="5" fill="#fff" opacity="0.9"/>';
 
@@ -35,14 +37,28 @@ export default function TreeMarker({ data, onStreetViewClick, streetViewAvail })
   const level = getAllergenLevel(data.species);
   const allergenInfo = getAllergenInfo(data.species);
   const levelInfo = ALLERGEN_LEVELS[level];
+  const [localCheck, setLocalCheck] = useState(null); // null=unchecked, true/false
+  const checkedRef = useRef(false);
 
-  // 공유 캐시에서 로드뷰 가용 여부 확인 (폴리라인 검사 결과와 동일)
-  const panoAvailable = streetViewAvail?.has(data.id) ? streetViewAvail.get(data.id) : null;
+  // 공유 캐시 우선, 없으면 로컬 검사 결과 사용
+  const panoAvailable = streetViewAvail?.has(data.id)
+    ? streetViewAvail.get(data.id)
+    : localCheck;
+
+  // 팝업 열 때 공유 캐시에 없으면 개별 검사
+  const onPopupOpen = () => {
+    if (streetViewAvail?.has(data.id) || checkedRef.current) return;
+    checkedRef.current = true;
+    const lat = data.startLat || data.latitude;
+    const lng = data.startLng || data.longitude;
+    checkPanoAvailability(lat, lng).then(setLocalCheck);
+  };
 
   return (
     <Marker
       position={[data.latitude, data.longitude]}
       icon={getIcon(level)}
+      eventHandlers={{ popupopen: onPopupOpen }}
     >
       <Popup>
         <div className="tree-popup">
@@ -96,7 +112,12 @@ export default function TreeMarker({ data, onStreetViewClick, streetViewAvail })
               )}
             </tbody>
           </table>
-          {onStreetViewClick && panoAvailable !== false && (
+          {onStreetViewClick && panoAvailable === null && (
+            <button className="street-view-btn" disabled>
+              로드뷰 확인 중...
+            </button>
+          )}
+          {onStreetViewClick && panoAvailable === true && (
             <button
               className="street-view-btn"
               onClick={(e) => {
