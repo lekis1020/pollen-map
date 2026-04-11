@@ -1,7 +1,7 @@
 import { sampleData } from '../data/sampleData';
 
 const API_BASE_URL =
-  'https://api.data.go.kr/openapi/tn_pubr_public_roadside_tree_info_api';
+  'https://api.data.go.kr/openapi/tn_pubr_public_sttree_stret_api';
 
 // API 키 확인
 function getApiKey() {
@@ -10,6 +10,25 @@ function getApiKey() {
 
 // API 응답을 통일된 형식으로 변환
 function normalizeItem(item) {
+  // 실제 API 필드 (tn_pubr_public_sttree_stret_api)
+  if (item.sttreeStretNm || item.sttreeKnd) {
+    const city = item.insttNm?.split(' ')[0] || '';
+    const district = item.insttNm?.split(' ').slice(1).join(' ') || '';
+    return {
+      id: `${item.startLatitude}_${item.startLongitude}_${item.sttreeKnd || item.sttreeStretNm}`,
+      roadName: item.sttreeStretNm || '',
+      city,
+      district,
+      species: item.sttreeKnd || '',
+      treeCount: parseInt(item.sttreeCo, 10) || 0,
+      latitude: parseFloat(item.startLatitude) || 0,
+      longitude: parseFloat(item.startLongitude) || 0,
+      institution: item.institutionNm || item.insttNm || '',
+      phone: item.phoneNumber || '',
+      referenceDate: item.referenceDate || '',
+    };
+  }
+  // 샘플 데이터 필드
   return {
     id: `${item.latitude}_${item.longitude}_${item.speciesNm || item.roadsidTreeRoadNm}`,
     roadName: item.roadsidTreeRoadNm || '',
@@ -69,7 +88,7 @@ export async function fetchTreeData({ city, district, pageNo = 1, numOfRows = 10
   const itemList = Array.isArray(items) ? items : [items];
 
   return {
-    items: itemList.filter((item) => item.latitude && item.longitude).map(normalizeItem),
+    items: itemList.filter((item) => (item.latitude && item.longitude) || (item.startLatitude && item.startLongitude)).map(normalizeItem),
     totalCount: parseInt(body?.totalCount, 10) || 0,
     pageNo: parseInt(body?.pageNo, 10) || 1,
     numOfRows: parseInt(body?.numOfRows, 10) || numOfRows,
