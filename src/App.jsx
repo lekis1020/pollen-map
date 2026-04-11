@@ -4,7 +4,7 @@ import StreetViewModal from './components/StreetViewModal';
 import FilterPanel from './components/FilterPanel';
 import StatsPanel from './components/StatsPanel';
 import CsvUploader from './components/CsvUploader';
-import { fetchTreeData } from './services/api';
+import { fetchAllTreeData } from './services/api';
 import { filterData, getUniqueCities, getUniqueSpecies, calculateStats } from './utils/helpers';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -43,7 +43,7 @@ function App() {
       try {
         setLoading(true);
         setError(null);
-        const result = await fetchTreeData();
+        const result = await fetchAllTreeData();
         setRawData(result.items);
         setIsSample(!!result.issample);
       } catch (err) {

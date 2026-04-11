@@ -1,17 +1,48 @@
 import { sampleData } from '../data/sampleData';
 
 const API_BASE_URL =
-  'https://api.data.go.kr/openapi/tn_pubr_public_roadside_tree_info_api';
+  'https://api.data.go.kr/openapi/tn_pubr_public_sttree_stret_api';
 
 // API 키 확인
 function getApiKey() {
   return import.meta.env.VITE_DATA_API_KEY;
 }
 
+// 고유 ID 생성용 카운터
+let idCounter = 0;
+
 // API 응답을 통일된 형식으로 변환
 function normalizeItem(item) {
+  idCounter++;
+  // 실제 API 필드 (tn_pubr_public_sttree_stret_api)
+  if (item.sttreeStretNm || item.sttreeKnd) {
+    const city = item.insttNm?.split(' ')[0] || '';
+    const district = item.insttNm?.split(' ').slice(1).join(' ') || '';
+    // 시작점과 끝점의 중간점을 사용 (도로 중앙에 더 가깝게 위치)
+    const startLat = parseFloat(item.startLatitude) || 0;
+    const startLng = parseFloat(item.startLongitude) || 0;
+    const endLat = parseFloat(item.endLatitude) || startLat;
+    const endLng = parseFloat(item.endLongitude) || startLng;
+    const midLat = (startLat + endLat) / 2;
+    const midLng = (startLng + endLng) / 2;
+    return {
+      id: `api_${idCounter}_${item.startLatitude}_${item.startLongitude}`,
+      roadName: item.sttreeStretNm || '',
+      city,
+      district,
+      species: item.sttreeKnd || '',
+      treeCount: parseInt(item.sttreeCo, 10) || 0,
+      latitude: midLat,
+      longitude: midLng,
+      startLat, startLng, endLat, endLng,
+      institution: item.institutionNm || item.insttNm || '',
+      phone: item.phoneNumber || '',
+      referenceDate: item.referenceDate || '',
+    };
+  }
+  // 샘플 데이터 필드
   return {
-    id: `${item.latitude}_${item.longitude}_${item.speciesNm || item.roadsidTreeRoadNm}`,
+    id: `sample_${idCounter}_${item.latitude}_${item.longitude}`,
     roadName: item.roadsidTreeRoadNm || '',
     city: item.ctprvnNm || '',
     district: item.signguNm || '',
@@ -69,11 +100,11 @@ export async function fetchTreeData({ city, district, pageNo = 1, numOfRows = 10
   const itemList = Array.isArray(items) ? items : [items];
 
   return {
-    items: itemList.filter((item) => item.latitude && item.longitude).map(normalizeItem),
+    items: itemList.filter((item) => (item.latitude && item.longitude) || (item.startLatitude && item.startLongitude)).map(normalizeItem),
     totalCount: parseInt(body?.totalCount, 10) || 0,
     pageNo: parseInt(body?.pageNo, 10) || 1,
     numOfRows: parseInt(body?.numOfRows, 10) || numOfRows,
-    isample: false,
+    issample: false,
   };
 }
 
@@ -81,30 +112,35 @@ export async function fetchTreeData({ city, district, pageNo = 1, numOfRows = 10
 export async function fetchAllTreeData({ city, district } = {}) {
   const firstPage = await fetchTreeData({ city, district, pageNo: 1, numOfRows: 1000 });
 
-  if (firstPage.isample || firstPage.isample === undefined) {
+  if (firstPage.issample) {
     return firstPage;
   }
 
   const allItems = [...firstPage.items];
   const totalPages = Math.ceil(firstPage.totalCount / 1000);
 
-  // 나머지 페이지를 병렬로 가져옴 (최대 10페이지)
-  const maxPages = Math.min(totalPages, 10);
-  const promises = [];
-  for (let page = 2; page <= maxPages; page++) {
-    promises.push(fetchTreeData({ city, district, pageNo: page, numOfRows: 1000 }));
-  }
+  // 나머지 페이지를 배치로 가져옴 (최대 50페이지, 5개씩 병렬)
+  const maxPages = Math.min(totalPages, 50);
+  const BATCH_SIZE = 5;
 
-  const results = await Promise.allSettled(promises);
-  for (const result of results) {
-    if (result.status === 'fulfilled') {
-      allItems.push(...result.value.items);
+  for (let batchStart = 2; batchStart <= maxPages; batchStart += BATCH_SIZE) {
+    const batchEnd = Math.min(batchStart + BATCH_SIZE - 1, maxPages);
+    const promises = [];
+    for (let page = batchStart; page <= batchEnd; page++) {
+      promises.push(fetchTreeData({ city, district, pageNo: page, numOfRows: 1000 }));
+    }
+
+    const results = await Promise.allSettled(promises);
+    for (const result of results) {
+      if (result.status === 'fulfilled') {
+        allItems.push(...result.value.items);
+      }
     }
   }
 
   return {
     items: allItems,
     totalCount: firstPage.totalCount,
-    isample: false,
+    issample: false,
   };
 }
