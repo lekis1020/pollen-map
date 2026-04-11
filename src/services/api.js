@@ -89,8 +89,8 @@ export async function fetchTreeData({ city, district, pageNo = 1, numOfRows = 10
   };
 }
 
-// 초기 로드: 첫 페이지만 (빠른 오버뷰)
-export async function fetchInitialData() {
+// 전체 데이터 로드 (모든 페이지를 가져온 후 한 번에 반환)
+export async function fetchAllData() {
   const apiKey = getApiKey();
   if (!apiKey || apiKey === 'your_api_key_here') {
     throw new Error('API 키가 설정되지 않았습니다. .env 파일에 VITE_DATA_API_KEY를 설정해주세요.');
@@ -98,36 +98,12 @@ export async function fetchInitialData() {
 
   const enabledSources = getEnabledSources();
   const allItems = [];
-  let totalCount = 0;
 
   for (const source of enabledSources) {
-    const firstPage = await fetchSourcePage(source, { pageNo: 1, numOfRows: 1000 });
-    allItems.push(...firstPage.items);
-    totalCount = firstPage.totalCount;
+    const result = await fetchAllPagesForSource(source);
+    allItems.push(...result.items);
   }
 
-  return { items: allItems, totalCount };
-}
-
-// 나머지 데이터 로드 (줌 인 시 호출)
-export async function fetchRemainingData(onUpdate) {
-  const enabledSources = getEnabledSources();
-  let allItems = [];
-
-  for (const source of enabledSources) {
-    const firstPage = await fetchSourcePage(source, { pageNo: 1, numOfRows: 1000 });
-    const totalPages = Math.ceil(firstPage.totalCount / 1000);
-    const maxPages = Math.min(totalPages, 10);
-
-    for (let page = 2; page <= maxPages; page++) {
-      try {
-        const result = await fetchSourcePage(source, { pageNo: page, numOfRows: 1000 });
-        allItems.push(...result.items);
-        if (onUpdate) onUpdate(allItems);
-      } catch { /* skip */ }
-    }
-  }
-
-  return allItems;
+  return { items: allItems, totalCount: allItems.length };
 }
 
