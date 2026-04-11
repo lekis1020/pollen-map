@@ -61,7 +61,9 @@ export default function CsvUploader({ onDataLoaded }) {
     <div className="csv-uploader">
       <h3>CSV 데이터 업로드</h3>
       <p className="csv-desc">
-        data.go.kr에서 다운로드한 전국가로수길 CSV 파일을 업로드하세요.
+        data.go.kr에서 다운로드한 식물 데이터 CSV 파일을 업로드하세요.
+        <br />
+        <small>가로수길, 보호수, 도시공원, 수목원 데이터를 자동 감지합니다.</small>
       </p>
 
       <div
@@ -95,7 +97,8 @@ export default function CsvUploader({ onDataLoaded }) {
 
       {result && (
         <div className="csv-result">
-          <strong>{result.items.length.toLocaleString()}건</strong> 로드 완료
+          <strong>{result.items.length.toLocaleString()}건</strong>{' '}
+          <span className="csv-source-tag">{result.detectedSourceLabel}</span> 데이터 로드 완료
           {result.skipped > 0 && (
             <span className="csv-skipped">
               ({result.skipped}건 좌표 없음으로 제외)

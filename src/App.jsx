@@ -4,7 +4,7 @@ import StreetViewModal from './components/StreetViewModal';
 import FilterPanel from './components/FilterPanel';
 import StatsPanel from './components/StatsPanel';
 import CsvUploader from './components/CsvUploader';
-import { fetchAllTreeData } from './services/api';
+import { fetchAllSources } from './services/api';
 import { filterData, getUniqueCities, getUniqueSpecies, calculateStats } from './utils/helpers';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -30,11 +30,13 @@ function App() {
   const [isSample, setIsSample] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [streetViewTree, setStreetViewTree] = useState(null);
+  const [sourceCounts, setSourceCounts] = useState({});
   const [filters, setFilters] = useState({
     city: '',
     species: '',
     allergenLevels: [],
     allergenOnly: false,
+    sourceTypes: [],
   });
 
   // 데이터 로드
@@ -43,9 +45,14 @@ function App() {
       try {
         setLoading(true);
         setError(null);
-        const result = await fetchAllTreeData();
+        const result = await fetchAllSources();
         setRawData(result.items);
-        setIsSample(!!result.issample);
+        setIsSample(!!result.isSample);
+        setSourceCounts(result.sourceCounts || {});
+        if (result.errors && result.errors.length > 0) {
+          const failedSources = result.errors.map((e) => e.label).join(', ');
+          console.warn(`일부 소스 로드 실패: ${failedSources}`);
+        }
       } catch (err) {
         setError(err.message);
       } finally {
@@ -85,14 +92,14 @@ function App() {
           <span className="header-icon" role="img" aria-hidden="true">
             &#127793;
           </span>
-          가로수길 알레르기 지도
+          식물 알레르기 지도
         </h1>
         <div className="header-info">
           {loading ? (
             <span className="loading-badge">로딩 중...</span>
           ) : (
             <span className="data-badge">
-              {filteredData.length}개 표시
+              {filteredData.length.toLocaleString()}개 표시
               {isSample && ' (샘플 데이터)'}
             </span>
           )}
@@ -106,13 +113,13 @@ function App() {
             onFilterChange={setFilters}
             cities={cities}
             speciesList={speciesList}
+            sourceCounts={sourceCounts}
           />
           <StatsPanel stats={stats} />
           <CsvUploader
             onDataLoaded={(items) => {
-              setRawData(items);
+              setRawData((prev) => [...prev, ...items]);
               setIsSample(false);
-              setFilters({ city: '', species: '', allergenLevels: [], allergenOnly: false });
             }}
           />
         </aside>
@@ -129,7 +136,7 @@ function App() {
           {loading ? (
             <div className="loading-overlay">
               <div className="spinner" />
-              <p>가로수길 데이터를 불러오는 중...</p>
+              <p>식물 데이터를 불러오는 중...</p>
             </div>
           ) : (
             <Map data={filteredData} onStreetViewClick={setStreetViewTree} />
