@@ -4,7 +4,7 @@ import { NORMALIZERS } from './normalizers';
 const API_BASE_URL = 'https://api.data.go.kr/openapi';
 
 function getApiKey() {
-  return import.meta.env.VITE_DATA_API_KEY;
+  return (import.meta.env.VITE_DATA_API_KEY || '').trim();
 }
 
 // 특정 소스의 데이터를 한 페이지 가져옴
