@@ -76,7 +76,7 @@ export default function Map({ data, mapCenter, mapZoom, onStreetViewClick }) {
           showCoverageOnHover={false}
         >
           {data.map((item, index) => (
-            <TreeMarker key={item.id || index} data={item} onStreetViewClick={onStreetViewClick} />
+            <TreeMarker key={item.id || index} data={item} onStreetViewClick={onStreetViewClick} streetViewAvail={streetViewAvail} />
           ))}
         </MarkerClusterGroup>
         <Legend />

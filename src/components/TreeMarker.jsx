@@ -1,4 +1,3 @@
-import { useState, useRef } from 'react';
 import { Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import { getAllergenInfo, getAllergenLevel, getPollenSeasonText, ALLERGEN_LEVELS } from '../data/allergenDatabase';
@@ -32,75 +31,18 @@ function getIcon(level) {
   return iconCache[level];
 }
 
-export default function TreeMarker({ data, onStreetViewClick }) {
+export default function TreeMarker({ data, onStreetViewClick, streetViewAvail }) {
   const level = getAllergenLevel(data.species);
   const allergenInfo = getAllergenInfo(data.species);
   const levelInfo = ALLERGEN_LEVELS[level];
-  const [panoAvailable, setPanoAvailable] = useState(null); // null=unchecked, true/false
-  const checkedRef = useRef(false);
 
-  const checkPanorama = () => {
-    if (checkedRef.current) return;
-    checkedRef.current = true;
-
-    if (!window.naver?.maps) {
-      setPanoAvailable(false);
-      return;
-    }
-
-    const lat = data.startLat || data.latitude;
-    const lng = data.startLng || data.longitude;
-    const position = new window.naver.maps.LatLng(lat, lng);
-
-    const div = document.createElement('div');
-    div.style.cssText = 'width:100px;height:100px;position:fixed;left:-9999px;top:0';
-    document.body.appendChild(div);
-
-    let resolved = false;
-    const cleanup = (available) => {
-      if (resolved) return;
-      resolved = true;
-      setPanoAvailable(available);
-      try { div.remove(); } catch {}
-    };
-
-    // 2초 타임아웃 - 무조건 결과 반환
-    setTimeout(() => cleanup(false), 2000);
-
-    try {
-      const pano = new window.naver.maps.Panorama(div, {
-        position: position,
-        pov: { pan: 0, tilt: 0, fov: 100 },
-      });
-
-      window.naver.maps.Event.addListener(pano, 'pano_changed', () => {
-        try {
-          const pos = pano.getPosition();
-          if (pos) {
-            const dist = position.distanceTo(pos);
-            cleanup(dist < 500);
-          } else {
-            cleanup(false);
-          }
-        } catch {
-          cleanup(false);
-        }
-      });
-
-      window.naver.maps.Event.addListener(pano, 'error', () => cleanup(false));
-      window.naver.maps.Event.addListener(pano, 'pano_status', (status) => {
-        if (status !== 'OK') cleanup(false);
-      });
-    } catch {
-      cleanup(false);
-    }
-  };
+  // 공유 캐시에서 로드뷰 가용 여부 확인 (폴리라인 검사 결과와 동일)
+  const panoAvailable = streetViewAvail?.has(data.id) ? streetViewAvail.get(data.id) : null;
 
   return (
     <Marker
       position={[data.latitude, data.longitude]}
       icon={getIcon(level)}
-      eventHandlers={{ popupopen: checkPanorama }}
     >
       <Popup>
         <div className="tree-popup">
