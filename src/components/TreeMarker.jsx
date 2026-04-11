@@ -78,7 +78,7 @@ export default function TreeMarker({ data, onStreetViewClick }) {
           const pos = pano.getPosition();
           if (pos) {
             const dist = position.distanceTo(pos);
-            cleanup(dist < 200);
+            cleanup(dist < 500);
           } else {
             cleanup(false);
           }

@@ -1,9 +1,10 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Map from './components/Map';
 import StreetViewModal from './components/StreetViewModal';
 import FilterPanel from './components/FilterPanel';
 import StatsPanel from './components/StatsPanel';
 import { fetchInitialData, fetchRemainingData } from './services/api';
+import { getCachedData, setCachedData } from './services/cache';
 import { filterData, getUniqueCities, getUniqueSpecies, calculateStats } from './utils/helpers';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -38,43 +39,73 @@ function App() {
     allergenOnly: false,
   });
 
-  // 초기 로드: 첫 페이지만
+  // 초기 로드: 캐시 우선, 백그라운드 갱신
   useEffect(() => {
     async function loadData() {
       try {
-        setLoading(true);
         setError(null);
+
+        // 1. 캐시 확인 (즉시 표시)
+        const cached = getCachedData();
+        if (cached && cached.length > 0) {
+          setRawData(cached);
+          setTotalCount(cached.length);
+          setLoading(false);
+
+          // 백그라운드에서 API 갱신 (UI 차단 없음)
+          fetchInitialData().then((result) => {
+            setTotalCount(result.totalCount);
+            setRawData(result.items);
+            setDetailLoading(true);
+            return fetchRemainingData((newItems) => {
+              setRawData((prev) => {
+                const existingIds = new Set(prev.map((i) => i.id));
+                const unique = newItems.filter((i) => !existingIds.has(i.id));
+                return unique.length > 0 ? [...prev, ...unique] : prev;
+              });
+            });
+          }).then(() => {
+            setRawData((prev) => {
+              setCachedData(prev);
+              return prev;
+            });
+            setDetailLoaded(true);
+            setDetailLoading(false);
+          }).catch(() => {});
+          return;
+        }
+
+        // 2. 캐시 없음: 첫 페이지 로드
+        setLoading(true);
         const result = await fetchInitialData();
         setRawData(result.items);
         setTotalCount(result.totalCount);
+        setLoading(false);
+
+        // 3. 나머지 페이지 백그라운드 로드
+        setDetailLoading(true);
+        await fetchRemainingData((newItems) => {
+          setRawData((prev) => {
+            const existingIds = new Set(prev.map((i) => i.id));
+            const unique = newItems.filter((i) => !existingIds.has(i.id));
+            return unique.length > 0 ? [...prev, ...unique] : prev;
+          });
+        });
+
+        // 4. 완료 후 캐시 저장
+        setRawData((prev) => {
+          setCachedData(prev);
+          return prev;
+        });
+        setDetailLoaded(true);
+        setDetailLoading(false);
       } catch (err) {
         setError(err.message);
-      } finally {
         setLoading(false);
       }
     }
     loadData();
   }, []);
-
-  // 줌 인 시 나머지 데이터 로드
-  const loadDetailData = useCallback(async () => {
-    if (detailLoaded || detailLoading) return;
-    setDetailLoading(true);
-    try {
-      await fetchRemainingData((newItems) => {
-        setRawData((prev) => {
-          const existingIds = new Set(prev.map((item) => item.id));
-          const unique = newItems.filter((item) => !existingIds.has(item.id));
-          return unique.length > 0 ? [...prev, ...unique] : prev;
-        });
-      });
-      setDetailLoaded(true);
-    } catch {
-      // silently ignore detail load errors
-    } finally {
-      setDetailLoading(false);
-    }
-  }, [detailLoaded, detailLoading]);
 
   // 필터 옵션
   const cities = useMemo(() => getUniqueCities(rawData), [rawData]);
@@ -111,13 +142,7 @@ function App() {
         <div className="header-info">
           <span className="data-badge">
             {filteredData.length.toLocaleString()}개 표시
-            {loading
-              ? ' (로딩 중...)'
-              : detailLoading
-              ? ` (로딩 중...)`
-              : !detailLoaded && totalCount > rawData.length
-              ? ` (전체 ${totalCount.toLocaleString()}개)`
-              : ''}
+            {loading || detailLoading ? ' (로딩 중...)' : ''}
           </span>
         </div>
       </header>
@@ -148,7 +173,7 @@ function App() {
               <p>식물 데이터를 불러오는 중...</p>
             </div>
           ) : (
-            <Map data={filteredData} onStreetViewClick={setStreetViewTree} onZoomDetail={loadDetailData} />
+            <Map data={filteredData} onStreetViewClick={setStreetViewTree} />
           )}
         </main>
       </div>

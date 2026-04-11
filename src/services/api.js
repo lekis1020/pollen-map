@@ -131,35 +131,3 @@ export async function fetchRemainingData(onUpdate) {
   return allItems;
 }
 
-// 모든 소스에서 데이터를 병렬로 가져옴
-export async function fetchAllSources({ city, district } = {}) {
-  const apiKey = getApiKey();
-
-  if (!apiKey || apiKey === 'your_api_key_here') {
-    throw new Error('API 키가 설정되지 않았습니다. .env 파일에 VITE_DATA_API_KEY를 설정해주세요.');
-  }
-
-  const enabledSources = getEnabledSources();
-  const results = await Promise.allSettled(
-    enabledSources.map((source) => fetchAllPagesForSource(source, { city, district }))
-  );
-
-  const allItems = [];
-  const errors = [];
-
-  results.forEach((result, index) => {
-    if (result.status === 'fulfilled') {
-      allItems.push(...result.value.items);
-    } else {
-      const source = enabledSources[index];
-      console.warn(`[${source.label}] 데이터 로드 실패:`, result.reason?.message);
-      errors.push({ source: source.id, label: source.label, error: result.reason?.message });
-    }
-  });
-
-  return {
-    items: allItems,
-    totalCount: allItems.length,
-    errors,
-  };
-}
