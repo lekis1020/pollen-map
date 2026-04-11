@@ -3,8 +3,7 @@ import Map from './components/Map';
 import StreetViewModal from './components/StreetViewModal';
 import FilterPanel from './components/FilterPanel';
 import StatsPanel from './components/StatsPanel';
-import CsvUploader from './components/CsvUploader';
-import { fetchAllSources } from './services/api';
+import { fetchAllSourcesProgressive } from './services/api';
 import { filterData, getUniqueCities, getUniqueSpecies, calculateStats } from './utils/helpers';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -42,12 +41,10 @@ function App() {
       try {
         setLoading(true);
         setError(null);
-        const result = await fetchAllSources();
-        setRawData(result.items);
-        if (result.errors && result.errors.length > 0) {
-          const failedSources = result.errors.map((e) => e.label).join(', ');
-          console.warn(`일부 소스 로드 실패: ${failedSources}`);
-        }
+        await fetchAllSourcesProgressive((update) => {
+          setRawData(update.items);
+          setLoading(update.loading);
+        });
       } catch (err) {
         setError(err.message);
       } finally {
@@ -90,13 +87,9 @@ function App() {
           식물 알레르기 지도
         </h1>
         <div className="header-info">
-          {loading ? (
-            <span className="loading-badge">로딩 중...</span>
-          ) : (
-            <span className="data-badge">
-              {filteredData.length.toLocaleString()}개 표시
-            </span>
-          )}
+          <span className="data-badge">
+            {filteredData.length.toLocaleString()}개 표시{loading ? ' (로딩 중...)' : ''}
+          </span>
         </div>
       </header>
 
@@ -109,11 +102,6 @@ function App() {
             speciesList={speciesList}
           />
           <StatsPanel stats={stats} />
-          <CsvUploader
-            onDataLoaded={(items) => {
-              setRawData((prev) => [...prev, ...items]);
-            }}
-          />
         </aside>
 
         <main className="main-content">
@@ -125,7 +113,7 @@ function App() {
               </button>
             </div>
           )}
-          {loading ? (
+          {loading && rawData.length === 0 ? (
             <div className="loading-overlay">
               <div className="spinner" />
               <p>식물 데이터를 불러오는 중...</p>
