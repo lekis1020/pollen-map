@@ -1,5 +1,8 @@
 // 소스별 API 응답 정규화 함수
 
+// 고유 ID 생성용 카운터
+let idCounter = 0;
+
 // 도로명 기반 방향 해시 (같은 도로는 항상 같은 방향)
 function roadNameHash(name) {
   let h = 0;
@@ -34,7 +37,7 @@ export function normalizeStreetTree(item) {
   }
 
   return {
-    id: `streetTree_${centerLat}_${centerLng}_${item.speciesNm || item.roadsidTreeRoadNm || item.sttreeStretNm}`,
+    id: `streetTree_${++idCounter}_${centerLat}_${centerLng}`,
     sourceType: 'streetTree',
     sourceLabel: '가로수길',
     roadName: item.roadsidTreeRoadNm || item.sttreeStretNm || '',
@@ -59,7 +62,7 @@ export function normalizeStreetTree(item) {
 
 export function normalizeProtectedTree(item) {
   return {
-    id: `protectedTree_${item.latitude}_${item.longitude}_${item.prtcTreeNm || item.speciesNm}`,
+    id: `protectedTree_${++idCounter}_${item.latitude}_${item.longitude}`,
     sourceType: 'protectedTree',
     sourceLabel: '보호수',
     roadName: '',
@@ -85,7 +88,7 @@ export function normalizeProtectedTree(item) {
 
 export function normalizeUrbanPark(item) {
   return {
-    id: `urbanPark_${item.latitude}_${item.longitude}_${item.parkNm}`,
+    id: `urbanPark_${++idCounter}_${item.latitude}_${item.longitude}`,
     sourceType: 'urbanPark',
     sourceLabel: '도시공원',
     roadName: '',
@@ -111,7 +114,7 @@ export function normalizeUrbanPark(item) {
 
 export function normalizeArboretum(item) {
   return {
-    id: `arboretum_${item.latitude}_${item.longitude}_${item.arboretumNm}`,
+    id: `arboretum_${++idCounter}_${item.latitude}_${item.longitude}`,
     sourceType: 'arboretum',
     sourceLabel: '수목원',
     roadName: '',

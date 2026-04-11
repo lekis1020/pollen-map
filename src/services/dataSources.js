@@ -6,7 +6,7 @@ export const DATA_SOURCES = {
     id: 'streetTree',
     label: '가로수길',
     description: '전국가로수길정보표준데이터',
-    apiPath: 'tn_pubr_public_roadside_tree_info_api',
+    apiPath: 'tn_pubr_public_sttree_stret_api',
     color: '#27ae60',
     icon: 'circle',
     enabled: true,
@@ -18,7 +18,7 @@ export const DATA_SOURCES = {
     apiPath: 'tn_pubr_public_prtc_tree_info_api',
     color: '#8e44ad',
     icon: 'star',
-    enabled: true,
+    enabled: false, // data.go.kr 별도 활용신청 필요
   },
   urbanPark: {
     id: 'urbanPark',
@@ -27,7 +27,7 @@ export const DATA_SOURCES = {
     apiPath: 'tn_pubr_public_urban_park_info_api',
     color: '#2980b9',
     icon: 'square',
-    enabled: true,
+    enabled: false, // data.go.kr 별도 활용신청 필요
   },
   arboretum: {
     id: 'arboretum',
@@ -36,7 +36,7 @@ export const DATA_SOURCES = {
     apiPath: 'tn_pubr_public_arboretum_info_api',
     color: '#d35400',
     icon: 'leaf',
-    enabled: true,
+    enabled: false, // data.go.kr 별도 활용신청 필요
   },
 };
 
