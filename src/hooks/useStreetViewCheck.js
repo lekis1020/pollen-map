@@ -29,7 +29,7 @@ function checkPanoAt(lat, lng) {
       resolve(available);
     };
 
-    setTimeout(() => done(false), 2000);
+    setTimeout(() => done(false), 5000);
 
     try {
       const pano = new window.naver.maps.Panorama(div, { position, pov: { pan: 0, tilt: 0, fov: 100 } });
@@ -40,7 +40,10 @@ function checkPanoAt(lat, lng) {
         } catch { done(false); }
       });
       window.naver.maps.Event.addListener(pano, 'error', () => done(false));
-      window.naver.maps.Event.addListener(pano, 'pano_status', (s) => { if (s !== 'OK') done(false); });
+      window.naver.maps.Event.addListener(pano, 'pano_status', (s) => {
+        if (s === 'OK') done(true);
+        else done(false);
+      });
     } catch { done(false); }
   });
 }
