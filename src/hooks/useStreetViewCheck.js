@@ -36,7 +36,7 @@ function checkPanoAt(lat, lng) {
       window.naver.maps.Event.addListener(pano, 'pano_changed', () => {
         try {
           const pos = pano.getPosition();
-          done(pos ? position.distanceTo(pos) < 500 : false);
+          done(pos ? position.distanceTo(pos) < 1000 : false);
         } catch { done(false); }
       });
       window.naver.maps.Event.addListener(pano, 'error', () => done(false));
@@ -69,14 +69,14 @@ async function batchCheck(items, concurrency = 3) {
 export function useStreetViewCheck(items, enabled) {
   const [availability, setAvailability] = useState(new Map());
   const checkingRef = useRef(false);
+  const checkedCount = availability.size;
 
   useEffect(() => {
     if (!enabled || !items.length || checkingRef.current) return;
 
-    // Only check items that have polyline coords and haven't been checked
     const toCheck = items.filter(item =>
       (item.startLat && item.endLat) && !availability.has(item.id)
-    ).slice(0, 50); // Max 50 per batch
+    ).slice(0, 30);
 
     if (toCheck.length === 0) return;
     checkingRef.current = true;
@@ -89,7 +89,7 @@ export function useStreetViewCheck(items, enabled) {
       });
       checkingRef.current = false;
     });
-  }, [items, enabled]);
+  }, [items, enabled, checkedCount]);
 
   return availability;
 }
