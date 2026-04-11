@@ -96,12 +96,7 @@ export default function TreeMarker({ data, onStreetViewClick, streetViewAvail })
               )}
             </tbody>
           </table>
-          {onStreetViewClick && panoAvailable === null && (
-            <button className="street-view-btn" disabled>
-              로드뷰 확인 중...
-            </button>
-          )}
-          {onStreetViewClick && panoAvailable === true && (
+          {onStreetViewClick && panoAvailable !== false && (
             <button
               className="street-view-btn"
               onClick={(e) => {
