@@ -34,6 +34,7 @@ function normalizeItem(item) {
       treeCount: parseInt(item.sttreeCo, 10) || 0,
       latitude: midLat,
       longitude: midLng,
+      startLat, startLng, endLat, endLng,
       institution: item.institutionNm || item.insttNm || '',
       phone: item.phoneNumber || '',
       referenceDate: item.referenceDate || '',

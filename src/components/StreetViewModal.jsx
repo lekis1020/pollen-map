@@ -26,7 +26,7 @@ export default function StreetViewModal({ treeData, onClose }) {
     return () => { document.body.style.overflow = ''; };
   }, []);
 
-  // 네이버 파노라마 초기화
+  // 네이버 파노라마 초기화 - 시작/중간/끝 좌표를 순차 탐색
   useEffect(() => {
     if (!containerRef.current) return;
 
@@ -41,172 +41,182 @@ export default function StreetViewModal({ treeData, onClose }) {
     setDistanceMeters(null);
     setLoading(true);
 
-    try {
-      const position = new window.naver.maps.LatLng(treeData.latitude, treeData.longitude);
-      const panorama = new window.naver.maps.Panorama(containerRef.current, {
-        position: position,
-        pov: { pan: 0, tilt: 0, fov: 100 },
-      });
-      panoramaRef.current = panorama;
+    // 시도할 좌표 후보 목록: 시작점 → 중간점 → 끝점
+    const candidates = [];
+    const startLat = treeData.startLat || treeData.latitude;
+    const startLng = treeData.startLng || treeData.longitude;
+    const endLat = treeData.endLat || treeData.latitude;
+    const endLng = treeData.endLng || treeData.longitude;
+    const midLat = treeData.latitude;
+    const midLng = treeData.longitude;
 
-      // 파노라마 위치 변경 시 실제 위치와 거리 계산
-      window.naver.maps.Event.addListener(panorama, 'pano_changed', () => {
-        const panoPos = panorama.getPosition();
-        if (panoPos) {
-          setActualPosition({ lat: panoPos.lat(), lng: panoPos.lng() });
-          const dist = position.distanceTo(panoPos);
-          setDistanceMeters(Math.round(dist));
-          setLoading(false);
-        }
-      });
-
-      // 로드뷰를 사용할 수 없는 위치 감지
-      window.naver.maps.Event.addListener(panorama, 'error', () => {
-        setError('이 위치의 로드뷰를 사용할 수 없습니다.');
-        setLoading(false);
-      });
-
-      window.naver.maps.Event.addListener(panorama, 'pano_status', (status) => {
-        if (status !== 'OK') {
-          setError('이 위치의 로드뷰를 사용할 수 없습니다.');
-          setLoading(false);
-        }
-      });
-
-      // 5초 타임아웃 - 응답 없으면 미지원으로 처리
-      const timeout = setTimeout(() => {
-        setLoading((prev) => {
-          if (prev) {
-            setError('이 위치의 로드뷰를 사용할 수 없습니다.');
-            return false;
-          }
-          return prev;
-        });
-      }, 5000);
-
-      return () => {
-        clearTimeout(timeout);
-        panoramaRef.current = null;
-      };
-    } catch {
-      setError('로드뷰를 불러오는 중 오류가 발생했습니다.');
-      setLoading(false);
+    candidates.push({ lat: startLat, lng: startLng, label: '시작점' });
+    if (midLat !== startLat || midLng !== startLng) {
+      candidates.push({ lat: midLat, lng: midLng, label: '중간점' });
     }
-  }, [treeData.latitude, treeData.longitude]);
+    if (endLat !== startLat || endLng !== startLng) {
+      candidates.push({ lat: endLat, lng: endLng, label: '끝점' });
+    }
 
-  // 미니맵 (파노라마 성공 시 비교 지도 / 실패 시 위치 확인 지도)
+    let candidateIndex = 0;
+    let currentTimeout = null;
+
+    function tryCandidate() {
+      if (candidateIndex >= candidates.length) {
+        setError('이 가로수길 구간에서 로드뷰를 사용할 수 없습니다.');
+        setLoading(false);
+        return;
+      }
+
+      const c = candidates[candidateIndex];
+      const position = new window.naver.maps.LatLng(c.lat, c.lng);
+
+      try {
+        const panorama = new window.naver.maps.Panorama(containerRef.current, {
+          position: position,
+          pov: { pan: 0, tilt: 0, fov: 100 },
+        });
+        panoramaRef.current = panorama;
+
+        let resolved = false;
+
+        window.naver.maps.Event.addListener(panorama, 'pano_changed', () => {
+          if (resolved) return;
+          resolved = true;
+          clearTimeout(currentTimeout);
+          const panoPos = panorama.getPosition();
+          if (panoPos) {
+            setActualPosition({ lat: panoPos.lat(), lng: panoPos.lng() });
+            const treeCenter = new window.naver.maps.LatLng(midLat, midLng);
+            const dist = treeCenter.distanceTo(panoPos);
+            setDistanceMeters(Math.round(dist));
+            setLoading(false);
+          }
+        });
+
+        const onFail = () => {
+          if (resolved) return;
+          resolved = true;
+          clearTimeout(currentTimeout);
+          candidateIndex++;
+          tryCandidate();
+        };
+
+        window.naver.maps.Event.addListener(panorama, 'error', onFail);
+        window.naver.maps.Event.addListener(panorama, 'pano_status', (status) => {
+          if (status !== 'OK') onFail();
+        });
+
+        // 3초 타임아웃 후 다음 후보로
+        currentTimeout = setTimeout(onFail, 3000);
+      } catch {
+        candidateIndex++;
+        tryCandidate();
+      }
+    }
+
+    tryCandidate();
+
+    return () => {
+      clearTimeout(currentTimeout);
+      panoramaRef.current = null;
+    };
+  }, [treeData]);
+
+  // 가로수길 구간 좌표 (시작~끝)
+  const startPos = treeData.startLat && treeData.startLng
+    ? { lat: treeData.startLat, lng: treeData.startLng } : null;
+  const endPos = treeData.endLat && treeData.endLng
+    ? { lat: treeData.endLat, lng: treeData.endLng } : null;
+
+  // 미니맵에 가로수길 구간 + 로드뷰 위치 표시
   useEffect(() => {
     if (!miniMapContainerRef.current || !window.naver?.maps) return;
     if (loading) return;
 
-    const treePos = new window.naver.maps.LatLng(treeData.latitude, treeData.longitude);
+    const nMaps = window.naver.maps;
+    const treePos = new nMaps.LatLng(treeData.latitude, treeData.longitude);
 
-    if (error) {
-      // 파노라마 실패: 위성/지도뷰로 해당 위치 표시
-      const map = new window.naver.maps.Map(miniMapContainerRef.current, {
-        center: treePos,
-        zoom: 17,
-        mapTypeId: window.naver.maps.MapTypeId.HYBRID,
-        draggable: true,
-        scrollWheel: true,
-        zoomControl: true,
-        zoomControlOptions: {
-          position: window.naver.maps.Position.TOP_RIGHT,
-          style: window.naver.maps.ZoomControlStyle.SMALL,
-        },
-      });
-      miniMapRef.current = map;
+    // 모든 좌표를 포함하는 bounds 계산
+    const allLats = [treeData.latitude];
+    const allLngs = [treeData.longitude];
+    if (startPos) { allLats.push(startPos.lat); allLngs.push(startPos.lng); }
+    if (endPos) { allLats.push(endPos.lat); allLngs.push(endPos.lng); }
+    if (actualPosition) { allLats.push(actualPosition.lat); allLngs.push(actualPosition.lng); }
 
-      // 나무 위치 마커
-      new window.naver.maps.Marker({
-        position: treePos,
-        map: map,
-        icon: {
-          content: `<div style="
-            width: 16px; height: 16px;
-            background: #2ecc71; border: 2.5px solid #fff;
-            border-radius: 50%; box-shadow: 0 2px 6px rgba(0,0,0,0.4);
-          "></div>`,
-          anchor: new window.naver.maps.Point(10, 10),
-        },
-        title: '가로수 위치',
-      });
-
-      return () => { miniMapRef.current = null; };
-    }
-
-    if (!actualPosition) return;
-
-    // 파노라마 성공: 나무 위치 vs 로드뷰 위치 비교
-    const panoPos = new window.naver.maps.LatLng(actualPosition.lat, actualPosition.lng);
-    const bounds = new window.naver.maps.LatLngBounds(
-      new window.naver.maps.LatLng(
-        Math.min(treeData.latitude, actualPosition.lat),
-        Math.min(treeData.longitude, actualPosition.lng)
-      ),
-      new window.naver.maps.LatLng(
-        Math.max(treeData.latitude, actualPosition.lat),
-        Math.max(treeData.longitude, actualPosition.lng)
-      )
+    const bounds = new nMaps.LatLngBounds(
+      new nMaps.LatLng(Math.min(...allLats), Math.min(...allLngs)),
+      new nMaps.LatLng(Math.max(...allLats), Math.max(...allLngs))
     );
 
-    const map = new window.naver.maps.Map(miniMapContainerRef.current, {
+    const map = new nMaps.Map(miniMapContainerRef.current, {
       center: bounds.getCenter(),
       zoom: 17,
+      mapTypeId: error ? nMaps.MapTypeId.HYBRID : nMaps.MapTypeId.NORMAL,
       draggable: true,
       scrollWheel: true,
       zoomControl: true,
       zoomControlOptions: {
-        position: window.naver.maps.Position.TOP_RIGHT,
-        style: window.naver.maps.ZoomControlStyle.SMALL,
+        position: nMaps.Position.TOP_RIGHT,
+        style: nMaps.ZoomControlStyle.SMALL,
       },
     });
     miniMapRef.current = map;
-
     map.fitBounds(bounds, { top: 40, right: 40, bottom: 40, left: 40 });
 
-    // 나무 위치 마커 (초록색)
-    new window.naver.maps.Marker({
-      position: treePos,
-      map: map,
-      icon: {
-        content: `<div style="
-          width: 12px; height: 12px;
-          background: #2ecc71; border: 2px solid #fff;
-          border-radius: 50%; box-shadow: 0 1px 4px rgba(0,0,0,0.3);
-        "></div>`,
-        anchor: new window.naver.maps.Point(8, 8),
-      },
-      title: '나무 위치',
-    });
+    // 가로수길 구간 표시 (초록색 선)
+    if (startPos && endPos && (startPos.lat !== endPos.lat || startPos.lng !== endPos.lng)) {
+      const startLatLng = new nMaps.LatLng(startPos.lat, startPos.lng);
+      const endLatLng = new nMaps.LatLng(endPos.lat, endPos.lng);
 
-    // 로드뷰 촬영 위치 마커 (파란색)
-    new window.naver.maps.Marker({
-      position: panoPos,
-      map: map,
-      icon: {
-        content: `<div style="
-          width: 12px; height: 12px;
-          background: #3498db; border: 2px solid #fff;
-          border-radius: 50%; box-shadow: 0 1px 4px rgba(0,0,0,0.3);
-        "></div>`,
-        anchor: new window.naver.maps.Point(8, 8),
-      },
-      title: '로드뷰 위치',
-    });
+      new nMaps.Polyline({
+        map, path: [startLatLng, endLatLng],
+        strokeColor: '#2ecc71', strokeOpacity: 0.8, strokeWeight: 5,
+      });
 
-    // 두 지점 연결선
-    new window.naver.maps.Polyline({
-      map: map,
-      path: [treePos, panoPos],
-      strokeColor: '#e74c3c',
-      strokeOpacity: 0.6,
-      strokeWeight: 2,
-      strokeStyle: 'shortdash',
-    });
+      // 시작/끝 마커
+      [startLatLng, endLatLng].forEach(pos => {
+        new nMaps.Marker({
+          position: pos, map,
+          icon: {
+            content: '<div style="width:8px;height:8px;background:#2ecc71;border:2px solid #fff;border-radius:50%;box-shadow:0 1px 3px rgba(0,0,0,0.3)"></div>',
+            anchor: new nMaps.Point(6, 6),
+          },
+        });
+      });
+    } else {
+      // 단일 지점 마커
+      new nMaps.Marker({
+        position: treePos, map,
+        icon: {
+          content: '<div style="width:14px;height:14px;background:#2ecc71;border:2.5px solid #fff;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,0.4)"></div>',
+          anchor: new nMaps.Point(9, 9),
+        },
+        title: '가로수 위치',
+      });
+    }
+
+    // 로드뷰 위치 마커 (파란색) - 성공 시만
+    if (actualPosition && !error) {
+      const panoPos = new nMaps.LatLng(actualPosition.lat, actualPosition.lng);
+      new nMaps.Marker({
+        position: panoPos, map,
+        icon: {
+          content: '<div style="width:12px;height:12px;background:#3498db;border:2px solid #fff;border-radius:50%;box-shadow:0 1px 4px rgba(0,0,0,0.3)"></div>',
+          anchor: new nMaps.Point(8, 8),
+        },
+        title: '로드뷰 위치',
+      });
+
+      // 가로수길과 로드뷰 연결선 (빨간 점선)
+      new nMaps.Polyline({
+        map, path: [treePos, panoPos],
+        strokeColor: '#e74c3c', strokeOpacity: 0.6, strokeWeight: 2, strokeStyle: 'shortdash',
+      });
+    }
 
     return () => { miniMapRef.current = null; };
-  }, [actualPosition, error, loading, treeData.latitude, treeData.longitude]);
+  }, [actualPosition, error, loading, treeData, startPos, endPos]);
 
   const handleBackdropClick = (e) => {
     if (e.target === e.currentTarget) onClose();
@@ -283,19 +293,13 @@ export default function StreetViewModal({ treeData, onClose }) {
             )}
             <div className="street-view-minimap-wrapper">
               <div className="street-view-minimap-header">
-                {error ? (
+                <span className="minimap-legend-item">
+                  <span className="minimap-dot minimap-dot-tree" />가로수길
+                </span>
+                {!error && actualPosition && (
                   <span className="minimap-legend-item">
-                    <span className="minimap-dot minimap-dot-tree" />가로수 위치 (위성지도)
+                    <span className="minimap-dot minimap-dot-pano" />로드뷰
                   </span>
-                ) : (
-                  <>
-                    <span className="minimap-legend-item">
-                      <span className="minimap-dot minimap-dot-tree" />나무
-                    </span>
-                    <span className="minimap-legend-item">
-                      <span className="minimap-dot minimap-dot-pano" />로드뷰
-                    </span>
-                  </>
                 )}
               </div>
               <div className="street-view-minimap" ref={miniMapContainerRef} />
