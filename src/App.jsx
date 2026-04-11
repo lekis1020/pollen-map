@@ -6,22 +6,7 @@ import StatsPanel from './components/StatsPanel';
 import { fetchAllData } from './services/api';
 import { getCachedData, setCachedData } from './services/cache';
 import { filterData, getUniqueCities, getUniqueSpecies, calculateStats } from './utils/helpers';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
-import 'react-leaflet-cluster/dist/assets/MarkerCluster.css';
-import 'react-leaflet-cluster/dist/assets/MarkerCluster.Default.css';
-import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
-import markerIcon from 'leaflet/dist/images/marker-icon.png';
-import markerShadow from 'leaflet/dist/images/marker-shadow.png';
 import './App.css';
-
-// Leaflet 기본 마커 아이콘 경로 수정
-delete L.Icon.Default.prototype._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: markerIcon2x,
-  iconUrl: markerIcon,
-  shadowUrl: markerShadow,
-});
 
 function App() {
   const [rawData, setRawData] = useState([]);
@@ -36,7 +21,7 @@ function App() {
     allergenOnly: false,
   });
 
-  // 데이터 로드: 캐시 우선 → 백그라운드 갱신
+  // 데이터 로드: 캐시 우선 -> 백그라운드 갱신
   useEffect(() => {
     async function loadData() {
       try {

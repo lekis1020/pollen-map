@@ -2,6 +2,7 @@
   flex: 1;
   position: relative;
   min-height: 400px;
+  overflow: hidden;
 }
 
 .map-container {

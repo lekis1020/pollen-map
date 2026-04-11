@@ -1,86 +1,227 @@
-import { useState } from 'react';
-import { MapContainer, TileLayer, Polyline, useMap, useMapEvents } from 'react-leaflet';
-import MarkerClusterGroup from 'react-leaflet-cluster';
-import TreeMarker from './TreeMarker';
+import { useEffect, useRef, useState, useCallback } from 'react';
+import { getAllergenInfo, getAllergenLevel, getPollenSeasonText, ALLERGEN_LEVELS } from '../data/allergenDatabase';
 import Legend from './Legend';
-import { useStreetViewCheck } from '../hooks/useStreetViewCheck';
 import './Map.css';
 
-// 지도 뷰 변경 컴포넌트
-function MapViewController({ center, zoom }) {
-  const map = useMap();
-  if (center) {
-    map.setView(center, zoom || map.getZoom());
-  }
-  return null;
-}
+export default function Map({ data, onStreetViewClick }) {
+  const mapRef = useRef(null);
+  const mapInstanceRef = useRef(null);
+  const markersRef = useRef([]);
+  const polylinesRef = useRef([]);
+  const clusterRef = useRef(null);
+  const infoWindowRef = useRef(null);
+  const [zoom, setZoom] = useState(7);
 
-// 줌 레벨 추적 컴포넌트
-function ZoomTracker({ onZoomChange }) {
-  useMapEvents({
-    zoomend: (e) => {
-      onZoomChange(e.target.getZoom());
-    },
-  });
-  return null;
-}
+  // Build info window HTML for a tree item
+  const buildInfoContent = useCallback((item) => {
+    const level = getAllergenLevel(item.species);
+    const levelInfo = ALLERGEN_LEVELS[level];
+    const allergenInfo = getAllergenInfo(item.species);
 
-// 가로수길 구간 폴리라인 (줌 레벨 12 이상에서만 표시)
-function TreeLines({ data, availability }) {
-  return data.map((item) => {
-    if (!item.startLat || !item.endLat) return null;
-    if (item.startLat === item.endLat && item.startLng === item.endLng) return null;
+    let rows = `
+      <tr><td class="popup-label">지역</td><td>${item.city} ${item.district}</td></tr>`;
+    if (item.species) {
+      rows += `
+      <tr><td class="popup-label">수종</td><td><strong>${item.species}</strong></td></tr>`;
+    }
+    if (item.plantCount > 0) {
+      rows += `
+      <tr><td class="popup-label">식재본수</td><td>${item.plantCount.toLocaleString()}본</td></tr>`;
+    }
+    rows += `
+      <tr><td class="popup-label">알레르기 등급</td><td><span class="allergen-badge" style="background:${levelInfo.color}">${levelInfo.label}</span></td></tr>`;
+    if (allergenInfo) {
+      rows += `
+      <tr><td class="popup-label">꽃가루 시기</td><td>${getPollenSeasonText(allergenInfo.pollenMonths)}</td></tr>
+      <tr><td class="popup-label">주요 증상</td><td class="popup-symptoms">${allergenInfo.symptoms}</td></tr>`;
+    }
+    if (item.institution) {
+      rows += `
+      <tr><td class="popup-label">관리기관</td><td>${item.institution}</td></tr>`;
+    }
 
-    const isAvailable = availability.get(item.id);
-    const checked = availability.has(item.id);
+    return `<div class="tree-popup">
+      <h3>${item.locationName || item.roadName}</h3>
+      <table><tbody>${rows}</tbody></table>
+      <button class="street-view-btn" id="naver-sv-btn">로드뷰 보기</button>
+    </div>`;
+  }, []);
 
-    return (
-      <Polyline
-        key={`line_${item.id}`}
-        positions={[[item.startLat, item.startLng], [item.endLat, item.endLng]]}
-        color={checked ? (isAvailable ? '#2ecc71' : '#bdc3c7') : '#2ecc71'}
-        weight={checked ? (isAvailable ? 5 : 3) : 4}
-        opacity={checked ? (isAvailable ? 0.8 : 0.4) : 0.7}
-        dashArray={checked && !isAvailable ? '8 6' : undefined}
-      />
-    );
-  });
-}
+  // Initialize Naver Map
+  useEffect(() => {
+    if (!window.naver?.maps || mapInstanceRef.current) return;
 
-export default function Map({ data, mapCenter, mapZoom, onStreetViewClick }) {
-  const defaultCenter = [36.5, 127.5]; // 대한민국 중앙
-  const defaultZoom = 7;
-  const [zoom, setZoom] = useState(mapZoom || defaultZoom);
-  const streetViewAvail = useStreetViewCheck(data, zoom >= 12);
+    const map = new window.naver.maps.Map(mapRef.current, {
+      center: new window.naver.maps.LatLng(36.5, 127.5),
+      zoom: 7,
+      minZoom: 5,
+      maxZoom: 18,
+      zoomControl: true,
+      zoomControlOptions: {
+        position: window.naver.maps.Position.TOP_RIGHT,
+        style: window.naver.maps.ZoomControlStyle.SMALL,
+      },
+    });
+    mapInstanceRef.current = map;
+
+    window.naver.maps.Event.addListener(map, 'zoom_changed', (z) => setZoom(z));
+
+    return () => {
+      mapInstanceRef.current = null;
+    };
+  }, []);
+
+  // Update markers when data changes
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    if (!map || !window.naver?.maps) return;
+
+    // Clear old markers and cluster
+    markersRef.current.forEach((m) => m.setMap(null));
+    markersRef.current = [];
+    if (clusterRef.current) {
+      clusterRef.current.setMap(null);
+      clusterRef.current = null;
+    }
+
+    // Create markers
+    const markers = data.map((item) => {
+      const level = getAllergenLevel(item.species);
+      const color = ALLERGEN_LEVELS[level]?.color || '#3498db';
+
+      const marker = new window.naver.maps.Marker({
+        position: new window.naver.maps.LatLng(item.latitude, item.longitude),
+        map: null, // managed by cluster
+        icon: {
+          content: `<div style="width:12px;height:12px;background:${color};border:2px solid #fff;border-radius:50%;box-shadow:0 1px 3px rgba(0,0,0,0.3);cursor:pointer"></div>`,
+          anchor: new window.naver.maps.Point(8, 8),
+        },
+        title: item.roadName || item.locationName,
+      });
+
+      // Click handler - open info window
+      window.naver.maps.Event.addListener(marker, 'click', () => {
+        if (infoWindowRef.current) {
+          infoWindowRef.current.close();
+        }
+
+        const content = buildInfoContent(item);
+
+        const infoWindow = new window.naver.maps.InfoWindow({
+          content: content,
+          borderWidth: 0,
+          backgroundColor: 'transparent',
+          anchorSize: new window.naver.maps.Size(0, 0),
+          pixelOffset: new window.naver.maps.Point(0, -10),
+        });
+
+        infoWindow.open(map, marker);
+        infoWindowRef.current = infoWindow;
+
+        // Attach click handler to street view button after DOM render
+        setTimeout(() => {
+          const btn = document.getElementById('naver-sv-btn');
+          if (btn && onStreetViewClick) {
+            btn.addEventListener('click', () => onStreetViewClick(item));
+          }
+        }, 50);
+      });
+
+      return marker;
+    });
+    markersRef.current = markers;
+
+    // Clustering
+    if (window.MarkerClustering) {
+      const htmlMarker1 = {
+        content: '<div style="cursor:pointer;width:40px;height:40px;line-height:40px;font-size:12px;color:#fff;text-align:center;background:#27ae60;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,0.3)"></div>',
+        size: new window.naver.maps.Size(40, 40),
+        anchor: new window.naver.maps.Point(20, 20),
+      };
+      const htmlMarker2 = {
+        content: '<div style="cursor:pointer;width:48px;height:48px;line-height:48px;font-size:13px;color:#fff;text-align:center;background:#2980b9;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,0.3)"></div>',
+        size: new window.naver.maps.Size(48, 48),
+        anchor: new window.naver.maps.Point(24, 24),
+      };
+      const htmlMarker3 = {
+        content: '<div style="cursor:pointer;width:56px;height:56px;line-height:56px;font-size:14px;color:#fff;text-align:center;background:#e67e22;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,0.3)"></div>',
+        size: new window.naver.maps.Size(56, 56),
+        anchor: new window.naver.maps.Point(28, 28),
+      };
+      const htmlMarker4 = {
+        content: '<div style="cursor:pointer;width:64px;height:64px;line-height:64px;font-size:15px;color:#fff;text-align:center;background:#e74c3c;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,0.3)"></div>',
+        size: new window.naver.maps.Size(64, 64),
+        anchor: new window.naver.maps.Point(32, 32),
+      };
+
+      const cluster = new MarkerClustering({
+        minClusterSize: 2,
+        maxZoom: 16,
+        map: map,
+        markers: markers,
+        disableClickZoom: false,
+        gridSize: 60,
+        icons: [htmlMarker1, htmlMarker2, htmlMarker3, htmlMarker4],
+        indexGenerator: [10, 100, 500, 1000],
+        stylingFunction: (clusterMarker, count) => {
+          const el = clusterMarker.getElement();
+          if (el) {
+            const div = el.querySelector('div');
+            if (div) div.textContent = count;
+          }
+        },
+      });
+      clusterRef.current = cluster;
+    } else {
+      // Fallback: show markers directly without clustering
+      markers.forEach((m) => m.setMap(map));
+    }
+
+    return () => {
+      markersRef.current.forEach((m) => m.setMap(null));
+      if (clusterRef.current) {
+        clusterRef.current.setMap(null);
+        clusterRef.current = null;
+      }
+    };
+  }, [data, onStreetViewClick, buildInfoContent]);
+
+  // Manage polylines based on zoom level
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    if (!map || !window.naver?.maps) return;
+
+    polylinesRef.current.forEach((p) => p.setMap(null));
+    polylinesRef.current = [];
+
+    if (zoom >= 12) {
+      const polylines = data
+        .filter((item) => item.startLat && item.endLat && (item.startLat !== item.endLat || item.startLng !== item.endLng))
+        .map((item) => {
+          return new window.naver.maps.Polyline({
+            map: map,
+            path: [
+              new window.naver.maps.LatLng(item.startLat, item.startLng),
+              new window.naver.maps.LatLng(item.endLat, item.endLng),
+            ],
+            strokeColor: '#2ecc71',
+            strokeWeight: 4,
+            strokeOpacity: 0.7,
+          });
+        });
+      polylinesRef.current = polylines;
+    }
+
+    return () => {
+      polylinesRef.current.forEach((p) => p.setMap(null));
+      polylinesRef.current = [];
+    };
+  }, [zoom, data]);
 
   return (
     <div className="map-wrapper">
-      <MapContainer
-        center={mapCenter || defaultCenter}
-        zoom={mapZoom || defaultZoom}
-        className="map-container"
-        maxZoom={18}
-        minZoom={5}
-      >
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
-        {mapCenter && <MapViewController center={mapCenter} zoom={mapZoom} />}
-        <ZoomTracker onZoomChange={setZoom} />
-        {zoom >= 12 && <TreeLines data={data} availability={streetViewAvail} />}
-        <MarkerClusterGroup
-          chunkedLoading
-          maxClusterRadius={60}
-          spiderfyOnMaxZoom
-          showCoverageOnHover={false}
-        >
-          {data.map((item, index) => (
-            <TreeMarker key={item.id || index} data={item} onStreetViewClick={onStreetViewClick} streetViewAvail={streetViewAvail} />
-          ))}
-        </MarkerClusterGroup>
-        <Legend />
-      </MapContainer>
+      <div ref={mapRef} className="map-container" />
+      <Legend />
     </div>
   );
 }
