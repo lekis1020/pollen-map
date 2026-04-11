@@ -1,4 +1,3 @@
-import { sampleDataBySource } from '../data/sampleData';
 import { DATA_SOURCES, getEnabledSources } from './dataSources';
 import { NORMALIZERS } from './normalizers';
 
@@ -72,37 +71,12 @@ async function fetchAllPagesForSource(source, { city, district } = {}) {
   return { items: allItems, totalCount: firstPage.totalCount };
 }
 
-// 샘플 데이터 반환 (API 키 없을 때)
-function getSampleData() {
-  const allItems = [];
-  for (const source of getEnabledSources()) {
-    const normalize = NORMALIZERS[source.id];
-    const sourceData = sampleDataBySource[source.id] || [];
-    allItems.push(...sourceData.map(normalize));
-  }
-  return {
-    items: allItems,
-    totalCount: allItems.length,
-    isSample: true,
-    sourceCounts: getSourceCounts(allItems),
-  };
-}
-
-function getSourceCounts(items) {
-  const counts = {};
-  for (const item of items) {
-    counts[item.sourceType] = (counts[item.sourceType] || 0) + 1;
-  }
-  return counts;
-}
-
 // 기존 API 호환: 가로수길 데이터만 가져옴
 export async function fetchTreeData({ city, district, pageNo = 1, numOfRows = 1000 } = {}) {
   const apiKey = getApiKey();
 
   if (!apiKey || apiKey === 'your_api_key_here') {
-    console.info('API 키가 설정되지 않아 샘플 데이터를 사용합니다.');
-    return getSampleData();
+    throw new Error('API 키가 설정되지 않았습니다. .env 파일에 VITE_DATA_API_KEY를 설정해주세요.');
   }
 
   const source = DATA_SOURCES.streetTree;
@@ -110,7 +84,6 @@ export async function fetchTreeData({ city, district, pageNo = 1, numOfRows = 10
   return {
     items: result.items,
     totalCount: result.totalCount,
-    isSample: false,
     pageNo: result.pageNo,
     numOfRows: result.numOfRows,
   };
@@ -121,8 +94,7 @@ export async function fetchAllSources({ city, district } = {}) {
   const apiKey = getApiKey();
 
   if (!apiKey || apiKey === 'your_api_key_here') {
-    console.info('API 키가 설정되지 않아 샘플 데이터를 사용합니다.');
-    return getSampleData();
+    throw new Error('API 키가 설정되지 않았습니다. .env 파일에 VITE_DATA_API_KEY를 설정해주세요.');
   }
 
   const enabledSources = getEnabledSources();
@@ -146,8 +118,6 @@ export async function fetchAllSources({ city, district } = {}) {
   return {
     items: allItems,
     totalCount: allItems.length,
-    isSample: false,
-    sourceCounts: getSourceCounts(allItems),
     errors,
   };
 }

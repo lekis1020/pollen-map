@@ -13,22 +13,11 @@ export function getUniqueSpecies(data) {
   return [...species].sort();
 }
 
-// 데이터에서 고유한 소스 타입 목록 추출
-export function getUniqueSources(data) {
-  const sources = new Set(data.map((item) => item.sourceType).filter(Boolean));
-  return [...sources];
-}
-
 // 필터 적용
 export function filterData(data, filters) {
   return data.filter((item) => {
     // 유효한 좌표가 있는 데이터만
     if (!item.latitude || !item.longitude) return false;
-
-    // 데이터 소스 필터
-    if (filters.sourceTypes && filters.sourceTypes.length > 0) {
-      if (!filters.sourceTypes.includes(item.sourceType)) return false;
-    }
 
     // 지역 필터
     if (filters.city && item.city !== filters.city) return false;

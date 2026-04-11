@@ -11,33 +11,6 @@ export const DATA_SOURCES = {
     icon: 'circle',
     enabled: true,
   },
-  protectedTree: {
-    id: 'protectedTree',
-    label: '보호수',
-    description: '전국보호수정보표준데이터',
-    apiPath: 'tn_pubr_public_prtc_tree_info_api',
-    color: '#8e44ad',
-    icon: 'star',
-    enabled: false, // data.go.kr 별도 활용신청 필요
-  },
-  urbanPark: {
-    id: 'urbanPark',
-    label: '도시공원',
-    description: '전국도시공원정보표준데이터',
-    apiPath: 'tn_pubr_public_urban_park_info_api',
-    color: '#2980b9',
-    icon: 'square',
-    enabled: false, // data.go.kr 별도 활용신청 필요
-  },
-  arboretum: {
-    id: 'arboretum',
-    label: '수목원',
-    description: '전국수목원정보표준데이터',
-    apiPath: 'tn_pubr_public_arboretum_info_api',
-    color: '#d35400',
-    icon: 'leaf',
-    enabled: false, // data.go.kr 별도 활용신청 필요
-  },
 };
 
 export const SOURCE_LIST = Object.values(DATA_SOURCES);

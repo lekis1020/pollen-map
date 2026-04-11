@@ -88,42 +88,6 @@
   border: 1px solid rgba(0, 0, 0, 0.1);
 }
 
-.source-checkboxes {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.source-checkbox {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 13px;
-  cursor: pointer;
-  padding: 4px 0;
-}
-
-.source-checkbox input[type="checkbox"] {
-  cursor: pointer;
-}
-
-.source-dot {
-  display: inline-block;
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  border: 1px solid rgba(0, 0, 0, 0.1);
-  flex-shrink: 0;
-}
-
-.source-name {
-  flex: 1;
-}
-
-.source-count {
-  font-size: 11px;
-  color: #999;
-}
 
 .toggle-label {
   display: flex;

@@ -27,16 +27,13 @@ function App() {
   const [rawData, setRawData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [isSample, setIsSample] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [streetViewTree, setStreetViewTree] = useState(null);
-  const [sourceCounts, setSourceCounts] = useState({});
   const [filters, setFilters] = useState({
     city: '',
     species: '',
     allergenLevels: [],
     allergenOnly: false,
-    sourceTypes: [],
   });
 
   // 데이터 로드
@@ -47,8 +44,6 @@ function App() {
         setError(null);
         const result = await fetchAllSources();
         setRawData(result.items);
-        setIsSample(!!result.isSample);
-        setSourceCounts(result.sourceCounts || {});
         if (result.errors && result.errors.length > 0) {
           const failedSources = result.errors.map((e) => e.label).join(', ');
           console.warn(`일부 소스 로드 실패: ${failedSources}`);
@@ -100,7 +95,6 @@ function App() {
           ) : (
             <span className="data-badge">
               {filteredData.length.toLocaleString()}개 표시
-              {isSample && ' (샘플 데이터)'}
             </span>
           )}
         </div>
@@ -113,13 +107,11 @@ function App() {
             onFilterChange={setFilters}
             cities={cities}
             speciesList={speciesList}
-            sourceCounts={sourceCounts}
           />
           <StatsPanel stats={stats} />
           <CsvUploader
             onDataLoaded={(items) => {
               setRawData((prev) => [...prev, ...items]);
-              setIsSample(false);
             }}
           />
         </aside>
