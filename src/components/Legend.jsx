@@ -34,6 +34,15 @@ export default function Legend() {
               </div>`
           )
           .join('')}
+        <h4 style="margin-top:8px">로드뷰 구간</h4>
+        <div class="legend-item">
+          <span class="legend-line" style="background:#2ecc71;height:4px;border-radius:2px;opacity:0.8"></span>
+          <span>로드뷰 가능 구간</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-line legend-line--dashed" style="background:#bdc3c7;height:3px;border-radius:2px;opacity:0.4"></span>
+          <span>로드뷰 미지원 구간</span>
+        </div>
       `;
       return div;
     };
