@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { MapContainer, TileLayer, Polyline, useMap, useMapEvents } from 'react-leaflet';
 import MarkerClusterGroup from 'react-leaflet-cluster';
 import TreeMarker from './TreeMarker';
@@ -15,9 +15,16 @@ function MapViewController({ center, zoom }) {
 }
 
 // 줌 레벨 추적 컴포넌트
-function ZoomTracker({ onZoomChange }) {
+function ZoomTracker({ onZoomChange, onZoomDetail, detailTriggered }) {
   useMapEvents({
-    zoomend: (e) => onZoomChange(e.target.getZoom()),
+    zoomend: (e) => {
+      const z = e.target.getZoom();
+      onZoomChange(z);
+      if (z >= 10 && onZoomDetail && !detailTriggered.current) {
+        detailTriggered.current = true;
+        onZoomDetail();
+      }
+    },
   });
   return null;
 }
@@ -39,10 +46,11 @@ function TreeLines({ data }) {
   });
 }
 
-export default function Map({ data, mapCenter, mapZoom, onStreetViewClick }) {
+export default function Map({ data, mapCenter, mapZoom, onStreetViewClick, onZoomDetail }) {
   const defaultCenter = [36.5, 127.5]; // 대한민국 중앙
   const defaultZoom = 7;
   const [zoom, setZoom] = useState(mapZoom || defaultZoom);
+  const detailTriggered = useRef(false);
 
   return (
     <div className="map-wrapper">
@@ -58,7 +66,7 @@ export default function Map({ data, mapCenter, mapZoom, onStreetViewClick }) {
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         {mapCenter && <MapViewController center={mapCenter} zoom={mapZoom} />}
-        <ZoomTracker onZoomChange={setZoom} />
+        <ZoomTracker onZoomChange={setZoom} onZoomDetail={onZoomDetail} detailTriggered={detailTriggered} />
         {zoom >= 12 && <TreeLines data={data} />}
         <MarkerClusterGroup
           chunkedLoading

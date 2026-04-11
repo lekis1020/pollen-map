@@ -1,3 +1,4 @@
+import { useState, useRef } from 'react';
 import { Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import { getAllergenInfo, getAllergenLevel, getPollenSeasonText, ALLERGEN_LEVELS } from '../data/allergenDatabase';
@@ -35,11 +36,64 @@ export default function TreeMarker({ data, onStreetViewClick }) {
   const level = getAllergenLevel(data.species);
   const allergenInfo = getAllergenInfo(data.species);
   const levelInfo = ALLERGEN_LEVELS[level];
+  const [panoAvailable, setPanoAvailable] = useState(null); // null=unchecked, true/false
+  const checkedRef = useRef(false);
+
+  const checkPanorama = () => {
+    if (checkedRef.current || !window.naver?.maps) return;
+    checkedRef.current = true;
+
+    const lat = data.startLat || data.latitude;
+    const lng = data.startLng || data.longitude;
+    const position = new window.naver.maps.LatLng(lat, lng);
+
+    const div = document.createElement('div');
+    div.style.cssText = 'width:1px;height:1px;position:absolute;left:-9999px';
+    document.body.appendChild(div);
+
+    try {
+      const pano = new window.naver.maps.Panorama(div, {
+        position: position,
+        pov: { pan: 0, tilt: 0, fov: 100 },
+      });
+
+      let resolved = false;
+      const timeout = setTimeout(() => {
+        if (!resolved) { resolved = true; setPanoAvailable(false); div.remove(); }
+      }, 3000);
+
+      window.naver.maps.Event.addListener(pano, 'pano_changed', () => {
+        if (resolved) return;
+        resolved = true;
+        clearTimeout(timeout);
+        const pos = pano.getPosition();
+        if (pos) {
+          const dist = position.distanceTo(pos);
+          setPanoAvailable(dist < 200);
+        } else {
+          setPanoAvailable(false);
+        }
+        div.remove();
+      });
+
+      window.naver.maps.Event.addListener(pano, 'error', () => {
+        if (resolved) return;
+        resolved = true;
+        clearTimeout(timeout);
+        setPanoAvailable(false);
+        div.remove();
+      });
+    } catch {
+      setPanoAvailable(false);
+      div.remove();
+    }
+  };
 
   return (
     <Marker
       position={[data.latitude, data.longitude]}
       icon={getIcon(level)}
+      eventHandlers={{ popupopen: checkPanorama }}
     >
       <Popup>
         <div className="tree-popup">
@@ -93,7 +147,12 @@ export default function TreeMarker({ data, onStreetViewClick }) {
               )}
             </tbody>
           </table>
-          {onStreetViewClick && (
+          {onStreetViewClick && panoAvailable === null && (
+            <button className="street-view-btn" disabled>
+              로드뷰 확인 중...
+            </button>
+          )}
+          {onStreetViewClick && panoAvailable === true && (
             <button
               className="street-view-btn"
               onClick={(e) => {
@@ -103,6 +162,9 @@ export default function TreeMarker({ data, onStreetViewClick }) {
             >
               로드뷰 보기
             </button>
+          )}
+          {onStreetViewClick && panoAvailable === false && (
+            <span className="street-view-unavailable">로드뷰 미지원 구간</span>
           )}
         </div>
       </Popup>

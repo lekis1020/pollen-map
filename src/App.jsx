@@ -1,9 +1,9 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import Map from './components/Map';
 import StreetViewModal from './components/StreetViewModal';
 import FilterPanel from './components/FilterPanel';
 import StatsPanel from './components/StatsPanel';
-import { fetchAllSourcesProgressive } from './services/api';
+import { fetchInitialData, fetchRemainingData } from './services/api';
 import { filterData, getUniqueCities, getUniqueSpecies, calculateStats } from './utils/helpers';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -24,7 +24,10 @@ L.Icon.Default.mergeOptions({
 
 function App() {
   const [rawData, setRawData] = useState([]);
+  const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [detailLoaded, setDetailLoaded] = useState(false);
+  const [detailLoading, setDetailLoading] = useState(false);
   const [error, setError] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [streetViewTree, setStreetViewTree] = useState(null);
@@ -35,16 +38,15 @@ function App() {
     allergenOnly: false,
   });
 
-  // 데이터 로드
+  // 초기 로드: 첫 페이지만
   useEffect(() => {
     async function loadData() {
       try {
         setLoading(true);
         setError(null);
-        await fetchAllSourcesProgressive((update) => {
-          setRawData(update.items);
-          setLoading(update.loading);
-        });
+        const result = await fetchInitialData();
+        setRawData(result.items);
+        setTotalCount(result.totalCount);
       } catch (err) {
         setError(err.message);
       } finally {
@@ -53,6 +55,26 @@ function App() {
     }
     loadData();
   }, []);
+
+  // 줌 인 시 나머지 데이터 로드
+  const loadDetailData = useCallback(async () => {
+    if (detailLoaded || detailLoading) return;
+    setDetailLoading(true);
+    try {
+      await fetchRemainingData((newItems) => {
+        setRawData((prev) => {
+          const existingIds = new Set(prev.map((item) => item.id));
+          const unique = newItems.filter((item) => !existingIds.has(item.id));
+          return unique.length > 0 ? [...prev, ...unique] : prev;
+        });
+      });
+      setDetailLoaded(true);
+    } catch {
+      // silently ignore detail load errors
+    } finally {
+      setDetailLoading(false);
+    }
+  }, [detailLoaded, detailLoading]);
 
   // 필터 옵션
   const cities = useMemo(() => getUniqueCities(rawData), [rawData]);
@@ -88,7 +110,14 @@ function App() {
         </h1>
         <div className="header-info">
           <span className="data-badge">
-            {filteredData.length.toLocaleString()}개 표시{loading ? ' (로딩 중...)' : ''}
+            {filteredData.length.toLocaleString()}개 표시
+            {loading
+              ? ' (로딩 중...)'
+              : detailLoading
+              ? ` (로딩 중...)`
+              : !detailLoaded && totalCount > rawData.length
+              ? ` (전체 ${totalCount.toLocaleString()}개)`
+              : ''}
           </span>
         </div>
       </header>
@@ -119,7 +148,7 @@ function App() {
               <p>식물 데이터를 불러오는 중...</p>
             </div>
           ) : (
-            <Map data={filteredData} onStreetViewClick={setStreetViewTree} />
+            <Map data={filteredData} onStreetViewClick={setStreetViewTree} onZoomDetail={loadDetailData} />
           )}
         </main>
       </div>
