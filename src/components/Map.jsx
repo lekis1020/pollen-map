@@ -11,6 +11,7 @@ export default function Map({ data, onStreetViewClick }) {
   const clusterRef = useRef(null);
   const infoWindowRef = useRef(null);
   const [zoom, setZoom] = useState(7);
+  const [mapReady, setMapReady] = useState(false);
 
   // Build info window HTML for a tree item
   const buildInfoContent = useCallback((item) => {
@@ -47,26 +48,40 @@ export default function Map({ data, onStreetViewClick }) {
     </div>`;
   }, []);
 
-  // Initialize Naver Map
+  // Initialize Naver Map (with polling for script load)
   useEffect(() => {
-    if (!window.naver?.maps || mapInstanceRef.current) return;
+    let cancelled = false;
+    let pollTimer;
 
-    const map = new window.naver.maps.Map(mapRef.current, {
-      center: new window.naver.maps.LatLng(36.5, 127.5),
-      zoom: 7,
-      minZoom: 5,
-      maxZoom: 18,
-      zoomControl: true,
-      zoomControlOptions: {
-        position: window.naver.maps.Position.TOP_RIGHT,
-        style: window.naver.maps.ZoomControlStyle.SMALL,
-      },
-    });
-    mapInstanceRef.current = map;
+    const init = () => {
+      if (cancelled || mapInstanceRef.current) return;
+      if (!window.naver?.maps || !mapRef.current) {
+        pollTimer = setTimeout(init, 100);
+        return;
+      }
 
-    window.naver.maps.Event.addListener(map, 'zoom_changed', (z) => setZoom(z));
+      const map = new window.naver.maps.Map(mapRef.current, {
+        center: new window.naver.maps.LatLng(36.5, 127.5),
+        zoom: 7,
+        minZoom: 5,
+        maxZoom: 18,
+        zoomControl: true,
+        zoomControlOptions: {
+          position: window.naver.maps.Position.TOP_RIGHT,
+          style: window.naver.maps.ZoomControlStyle.SMALL,
+        },
+      });
+      mapInstanceRef.current = map;
+      window.naver.maps.Event.addListener(map, 'zoom_changed', (z) => setZoom(z));
+
+      setMapReady(true);
+    };
+
+    init();
 
     return () => {
+      cancelled = true;
+      if (pollTimer) clearTimeout(pollTimer);
       mapInstanceRef.current = null;
     };
   }, []);
@@ -172,7 +187,7 @@ export default function Map({ data, onStreetViewClick }) {
         clusterRef.current = null;
       }
     };
-  }, [data, onStreetViewClick, buildInfoContent]);
+  }, [data, onStreetViewClick, buildInfoContent, mapReady]);
 
   // Manage polylines based on zoom level
   useEffect(() => {
