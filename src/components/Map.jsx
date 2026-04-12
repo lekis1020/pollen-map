@@ -3,6 +3,17 @@ import { getAllergenInfo, getAllergenLevel, getPollenSeasonText, ALLERGEN_LEVELS
 import Legend from './Legend';
 import './Map.css';
 
+const MARKER_CAP = 2000;
+
+// 균등 샘플링: 전체 배열에서 cap개를 고르게 추출
+function sampleEven(arr, cap) {
+  if (arr.length <= cap) return arr;
+  const step = arr.length / cap;
+  const out = new Array(cap);
+  for (let i = 0; i < cap; i++) out[i] = arr[Math.floor(i * step)];
+  return out;
+}
+
 export default function Map({ data, onStreetViewClick }) {
   const mapRef = useRef(null);
   const mapInstanceRef = useRef(null);
@@ -10,7 +21,9 @@ export default function Map({ data, onStreetViewClick }) {
   const polylinesRef = useRef([]);
   const clusterRef = useRef(null);
   const infoWindowRef = useRef(null);
+  const idleDebounceRef = useRef(null);
   const [zoom, setZoom] = useState(7);
+  const [bounds, setBounds] = useState(null);
   const [mapReady, setMapReady] = useState(false);
 
   // Build info window HTML for a tree item
@@ -74,6 +87,23 @@ export default function Map({ data, onStreetViewClick }) {
       mapInstanceRef.current = map;
       window.naver.maps.Event.addListener(map, 'zoom_changed', (z) => setZoom(z));
 
+      const updateBounds = () => {
+        if (idleDebounceRef.current) clearTimeout(idleDebounceRef.current);
+        idleDebounceRef.current = setTimeout(() => {
+          try {
+            const b = map.getBounds();
+            setBounds({
+              minLat: b.minY(),
+              maxLat: b.maxY(),
+              minLng: b.minX(),
+              maxLng: b.maxX(),
+            });
+          } catch {}
+        }, 180);
+      };
+      window.naver.maps.Event.addListener(map, 'idle', updateBounds);
+      updateBounds();
+
       setMapReady(true);
     };
 
@@ -102,8 +132,19 @@ export default function Map({ data, onStreetViewClick }) {
       try { infoWindowRef.current.close(); } catch {}
     }
 
+    // 뷰포트 기반 필터 + 마커 상한 (렌더 성능 보호)
+    const inBounds = bounds
+      ? data.filter((it) =>
+          it.latitude >= bounds.minLat &&
+          it.latitude <= bounds.maxLat &&
+          it.longitude >= bounds.minLng &&
+          it.longitude <= bounds.maxLng
+        )
+      : data;
+    const visible = sampleEven(inBounds, MARKER_CAP);
+
     // Create markers
-    const markers = data.map((item) => {
+    const markers = visible.map((item) => {
       const level = getAllergenLevel(item.species);
       const color = ALLERGEN_LEVELS[level]?.color || '#3498db';
 
@@ -187,7 +228,7 @@ export default function Map({ data, onStreetViewClick }) {
         clusterRef.current = null;
       }
     };
-  }, [data, onStreetViewClick, buildInfoContent, mapReady]);
+  }, [data, bounds, onStreetViewClick, buildInfoContent, mapReady]);
 
   // Manage polylines based on zoom level
   useEffect(() => {
@@ -200,6 +241,12 @@ export default function Map({ data, onStreetViewClick }) {
     if (zoom >= 12) {
       const polylines = data
         .filter((item) => item.startLat && item.endLat && (item.startLat !== item.endLat || item.startLng !== item.endLng))
+        .filter((item) => !bounds || (
+          Math.max(item.startLat, item.endLat) >= bounds.minLat &&
+          Math.min(item.startLat, item.endLat) <= bounds.maxLat &&
+          Math.max(item.startLng, item.endLng) >= bounds.minLng &&
+          Math.min(item.startLng, item.endLng) <= bounds.maxLng
+        ))
         .map((item) => {
           return new window.naver.maps.Polyline({
             map: map,
@@ -219,7 +266,7 @@ export default function Map({ data, onStreetViewClick }) {
       polylinesRef.current.forEach((p) => p.setMap(null));
       polylinesRef.current = [];
     };
-  }, [zoom, data]);
+  }, [zoom, data, bounds]);
 
   return (
     <div className="map-wrapper">
