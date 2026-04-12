@@ -41,22 +41,9 @@ export default function StreetViewModal({ treeData, onClose }) {
     setDistanceMeters(null);
     setLoading(true);
 
-    // 시도할 좌표 후보 목록: 시작점 → 중간점 → 끝점
-    const candidates = [];
-    const startLat = treeData.startLat || treeData.latitude;
-    const startLng = treeData.startLng || treeData.longitude;
-    const endLat = treeData.endLat || treeData.latitude;
-    const endLng = treeData.endLng || treeData.longitude;
     const midLat = treeData.latitude;
     const midLng = treeData.longitude;
-
-    candidates.push({ lat: startLat, lng: startLng, label: '시작점' });
-    if (midLat !== startLat || midLng !== startLng) {
-      candidates.push({ lat: midLat, lng: midLng, label: '중간점' });
-    }
-    if (endLat !== startLat || endLng !== startLng) {
-      candidates.push({ lat: endLat, lng: endLng, label: '끝점' });
-    }
+    const candidates = [{ lat: midLat, lng: midLng, label: '중심점' }];
 
     let candidateIndex = 0;
     let currentTimeout = null;
@@ -127,13 +114,7 @@ export default function StreetViewModal({ treeData, onClose }) {
     };
   }, [treeData]);
 
-  // 가로수길 구간 좌표 (시작~끝)
-  const startPos = treeData.startLat && treeData.startLng
-    ? { lat: treeData.startLat, lng: treeData.startLng } : null;
-  const endPos = treeData.endLat && treeData.endLng
-    ? { lat: treeData.endLat, lng: treeData.endLng } : null;
-
-  // 미니맵에 가로수길 구간 + 로드뷰 위치 표시
+  // 미니맵에 가로수 위치 + 로드뷰 위치 표시
   useEffect(() => {
     if (!miniMapContainerRef.current || !window.naver?.maps) return;
     if (loading) return;
@@ -141,11 +122,8 @@ export default function StreetViewModal({ treeData, onClose }) {
     const nMaps = window.naver.maps;
     const treePos = new nMaps.LatLng(treeData.latitude, treeData.longitude);
 
-    // 모든 좌표를 포함하는 bounds 계산
     const allLats = [treeData.latitude];
     const allLngs = [treeData.longitude];
-    if (startPos) { allLats.push(startPos.lat); allLngs.push(startPos.lng); }
-    if (endPos) { allLats.push(endPos.lat); allLngs.push(endPos.lng); }
     if (actualPosition) { allLats.push(actualPosition.lat); allLngs.push(actualPosition.lng); }
 
     const bounds = new nMaps.LatLngBounds(
@@ -168,39 +146,15 @@ export default function StreetViewModal({ treeData, onClose }) {
     miniMapRef.current = map;
     map.fitBounds(bounds, { top: 40, right: 40, bottom: 40, left: 40 });
 
-    // 가로수길 구간 표시 (초록색 선)
-    if (startPos && endPos && (startPos.lat !== endPos.lat || startPos.lng !== endPos.lng)) {
-      const startLatLng = new nMaps.LatLng(startPos.lat, startPos.lng);
-      const endLatLng = new nMaps.LatLng(endPos.lat, endPos.lng);
+    new nMaps.Marker({
+      position: treePos, map,
+      icon: {
+        content: '<div style="width:14px;height:14px;background:#2ecc71;border:2.5px solid #fff;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,0.4)"></div>',
+        anchor: new nMaps.Point(9, 9),
+      },
+      title: '가로수 위치',
+    });
 
-      new nMaps.Polyline({
-        map, path: [startLatLng, endLatLng],
-        strokeColor: '#2ecc71', strokeOpacity: 0.8, strokeWeight: 5,
-      });
-
-      // 시작/끝 마커
-      [startLatLng, endLatLng].forEach(pos => {
-        new nMaps.Marker({
-          position: pos, map,
-          icon: {
-            content: '<div style="width:8px;height:8px;background:#2ecc71;border:2px solid #fff;border-radius:50%;box-shadow:0 1px 3px rgba(0,0,0,0.3)"></div>',
-            anchor: new nMaps.Point(6, 6),
-          },
-        });
-      });
-    } else {
-      // 단일 지점 마커
-      new nMaps.Marker({
-        position: treePos, map,
-        icon: {
-          content: '<div style="width:14px;height:14px;background:#2ecc71;border:2.5px solid #fff;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,0.4)"></div>',
-          anchor: new nMaps.Point(9, 9),
-        },
-        title: '가로수 위치',
-      });
-    }
-
-    // 로드뷰 위치 마커 (파란색) - 성공 시만
     if (actualPosition && !error) {
       const panoPos = new nMaps.LatLng(actualPosition.lat, actualPosition.lng);
       new nMaps.Marker({
@@ -212,7 +166,6 @@ export default function StreetViewModal({ treeData, onClose }) {
         title: '로드뷰 위치',
       });
 
-      // 가로수길과 로드뷰 연결선 (빨간 점선)
       new nMaps.Polyline({
         map, path: [treePos, panoPos],
         strokeColor: '#e74c3c', strokeOpacity: 0.6, strokeWeight: 2, strokeStyle: 'shortdash',
@@ -220,7 +173,7 @@ export default function StreetViewModal({ treeData, onClose }) {
     }
 
     return () => { miniMapRef.current = null; };
-  }, [actualPosition, error, loading, treeData, startPos, endPos]);
+  }, [actualPosition, error, loading, treeData]);
 
   const handleBackdropClick = (e) => {
     if (e.target === e.currentTarget) onClose();
@@ -297,7 +250,7 @@ export default function StreetViewModal({ treeData, onClose }) {
             <div className="street-view-minimap-wrapper">
               <div className="street-view-minimap-header">
                 <span className="minimap-legend-item">
-                  <span className="minimap-dot minimap-dot-tree" />가로수길
+                  <span className="minimap-dot minimap-dot-tree" />가로수
                 </span>
                 {!error && actualPosition && (
                   <span className="minimap-legend-item">

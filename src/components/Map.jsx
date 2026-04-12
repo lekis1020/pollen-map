@@ -18,11 +18,9 @@ export default function Map({ data, onStreetViewClick }) {
   const mapRef = useRef(null);
   const mapInstanceRef = useRef(null);
   const markersRef = useRef([]);
-  const polylinesRef = useRef([]);
   const clusterRef = useRef(null);
   const infoWindowRef = useRef(null);
   const idleDebounceRef = useRef(null);
-  const [zoom, setZoom] = useState(7);
   const [bounds, setBounds] = useState(null);
   const [mapReady, setMapReady] = useState(false);
 
@@ -85,7 +83,6 @@ export default function Map({ data, onStreetViewClick }) {
         },
       });
       mapInstanceRef.current = map;
-      window.naver.maps.Event.addListener(map, 'zoom_changed', (z) => setZoom(z));
 
       const updateBounds = () => {
         if (idleDebounceRef.current) clearTimeout(idleDebounceRef.current);
@@ -229,44 +226,6 @@ export default function Map({ data, onStreetViewClick }) {
       }
     };
   }, [data, bounds, onStreetViewClick, buildInfoContent, mapReady]);
-
-  // Manage polylines based on zoom level
-  useEffect(() => {
-    const map = mapInstanceRef.current;
-    if (!map || !window.naver?.maps) return;
-
-    polylinesRef.current.forEach((p) => p.setMap(null));
-    polylinesRef.current = [];
-
-    if (zoom >= 12) {
-      const polylines = data
-        .filter((item) => item.startLat && item.endLat && (item.startLat !== item.endLat || item.startLng !== item.endLng))
-        .filter((item) => !bounds || (
-          Math.max(item.startLat, item.endLat) >= bounds.minLat &&
-          Math.min(item.startLat, item.endLat) <= bounds.maxLat &&
-          Math.max(item.startLng, item.endLng) >= bounds.minLng &&
-          Math.min(item.startLng, item.endLng) <= bounds.maxLng
-        ))
-        .map((item) => {
-          return new window.naver.maps.Polyline({
-            map: map,
-            path: [
-              new window.naver.maps.LatLng(item.startLat, item.startLng),
-              new window.naver.maps.LatLng(item.endLat, item.endLng),
-            ],
-            strokeColor: '#2ecc71',
-            strokeWeight: 4,
-            strokeOpacity: 0.7,
-          });
-        });
-      polylinesRef.current = polylines;
-    }
-
-    return () => {
-      polylinesRef.current.forEach((p) => p.setMap(null));
-      polylinesRef.current = [];
-    };
-  }, [zoom, data, bounds]);
 
   return (
     <div className="map-wrapper">
