@@ -9,7 +9,8 @@ import { filterData, getUniqueCities, getUniqueSpecies, calculateStats } from '.
 import './App.css';
 
 function App() {
-  const [rawData, setRawData] = useState([]);
+  const [nationwideData, setNationwideData] = useState([]);
+  const [seoulData, setSeoulData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -21,40 +22,30 @@ function App() {
     allergenOnly: false,
   });
 
-  // 데이터 로드: 캐시 우선 -> 백그라운드 갱신
+  // 전국 가로수길(공공데이터) 로드: 캐시 우선 -> 백그라운드 갱신
   useEffect(() => {
     async function loadData() {
       try {
         setError(null);
 
-        // 1. 캐시 확인 (즉시 표시)
         const cached = getCachedData();
         if (cached && cached.length > 0) {
-          setRawData(cached);
+          setNationwideData(cached);
           setLoading(false);
-
-          // 백그라운드에서 API 갱신 (UI 차단 없음)
           fetchAllData(null).then((result) => {
-            setRawData(result.items);
+            setNationwideData(result.items);
             setCachedData(result.items);
           }).catch(() => {});
           return;
         }
 
-        // 2. 캐시 없음: 첫 페이지 즉시 표시 → 나머지 완료 후 추가
         setLoading(true);
         const result = await fetchAllData((firstPage) => {
-          setRawData(firstPage.items);
+          setNationwideData(firstPage.items);
           setLoading(false);
         });
-        // 기존 마커 유지, 새 아이템만 추가 (전체 교체 시 클러스터링 에러 방지)
-        setRawData((prev) => {
-          const existingIds = new Set(prev.map(i => i.id));
-          const newItems = result.items.filter(i => !existingIds.has(i.id));
-          const merged = newItems.length > 0 ? [...prev, ...newItems] : prev;
-          setCachedData(merged);
-          return merged;
-        });
+        setNationwideData(result.items);
+        setCachedData(result.items);
       } catch (err) {
         setError(err.message);
       } finally {
@@ -64,20 +55,21 @@ function App() {
     loadData();
   }, []);
 
-  // 서울 개별 가로수(OA-1325) 백그라운드 로드 → 서울 구간 데이터를 개별 그루로 대체
+  // 서울 개별 가로수(OA-1325) 백그라운드 로드
   useEffect(() => {
     let cancelled = false;
     loadSeoulTrees()
-      .then((seoul) => {
-        if (cancelled || seoul.length === 0) return;
-        setRawData((prev) => {
-          const nonSeoul = prev.filter((it) => it.city !== '서울특별시');
-          return [...nonSeoul, ...seoul];
-        });
-      })
+      .then((seoul) => { if (!cancelled) setSeoulData(seoul); })
       .catch((err) => console.warn('서울 가로수 로드 실패:', err.message));
     return () => { cancelled = true; };
   }, []);
+
+  // 전국 + 서울 병합: 서울은 개별 그루 데이터로 전국 소스 서울 부분을 대체
+  const rawData = useMemo(() => {
+    if (seoulData.length === 0) return nationwideData;
+    const nonSeoul = nationwideData.filter((it) => it.city !== '서울특별시');
+    return [...nonSeoul, ...seoulData];
+  }, [nationwideData, seoulData]);
 
   // 필터 옵션
   const cities = useMemo(() => getUniqueCities(rawData), [rawData]);
