@@ -11,6 +11,14 @@ export const DATA_SOURCES = {
     icon: 'circle',
     enabled: true,
   },
+  seoulTree: {
+    id: 'seoulTree',
+    label: '서울 가로수 (개별)',
+    description: '서울시 가로수 위치정보 OA-1325',
+    color: '#2ecc71',
+    icon: 'circle',
+    enabled: false, // 공공데이터 API가 아닌 정적 JSON으로 로드하므로 fetchAllData 루프에서 제외
+  },
 };
 
 export const SOURCE_LIST = Object.values(DATA_SOURCES);

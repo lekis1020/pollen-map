@@ -3,7 +3,7 @@ import Map from './components/Map';
 import StreetViewModal from './components/StreetViewModal';
 import FilterPanel from './components/FilterPanel';
 import StatsPanel from './components/StatsPanel';
-import { fetchAllData } from './services/api';
+import { fetchAllData, loadSeoulTrees } from './services/api';
 import { getCachedData, setCachedData } from './services/cache';
 import { filterData, getUniqueCities, getUniqueSpecies, calculateStats } from './utils/helpers';
 import './App.css';
@@ -62,6 +62,21 @@ function App() {
       }
     }
     loadData();
+  }, []);
+
+  // 서울 개별 가로수(OA-1325) 백그라운드 로드 → 서울 구간 데이터를 개별 그루로 대체
+  useEffect(() => {
+    let cancelled = false;
+    loadSeoulTrees()
+      .then((seoul) => {
+        if (cancelled || seoul.length === 0) return;
+        setRawData((prev) => {
+          const nonSeoul = prev.filter((it) => it.city !== '서울특별시');
+          return [...nonSeoul, ...seoul];
+        });
+      })
+      .catch((err) => console.warn('서울 가로수 로드 실패:', err.message));
+    return () => { cancelled = true; };
   }, []);
 
   // 필터 옵션

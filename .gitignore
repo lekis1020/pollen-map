@@ -27,3 +27,7 @@ dist-ssr
 *.sln
 *.sw?
 .vercel
+
+# OMC 세션 상태 및 테스트 아티팩트
+.omc/
+test-results/

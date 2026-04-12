@@ -89,6 +89,31 @@ export async function fetchTreeData({ city, district, pageNo = 1, numOfRows = 10
   };
 }
 
+// 서울 개별 가로수 정적 JSON 로드 (OA-1325, ~257k 그루)
+export async function loadSeoulTrees() {
+  const res = await fetch('/data/seoul-trees.json');
+  if (!res.ok) throw new Error(`서울 가로수 데이터 로드 실패: ${res.status}`);
+  const data = await res.json();
+  return data.items.map((it) => ({
+    id: it.id,
+    sourceType: 'seoulTree',
+    sourceLabel: '서울 가로수 (개별)',
+    roadName: it.road,
+    locationName: it.road,
+    city: '서울특별시',
+    district: it.gu,
+    species: it.sp,
+    treeCount: 1,
+    plantCount: 1,
+    latitude: it.lat,
+    longitude: it.lng,
+    institution: '',
+    phone: '',
+    referenceDate: data.generatedAt || '',
+    extra: {},
+  }));
+}
+
 // 2단계 로드: 첫 페이지 즉시 반환 → 나머지 완료 후 콜백
 export async function fetchAllData(onFirstPage) {
   const apiKey = getApiKey();
