@@ -76,12 +76,15 @@ export default function Map({ data, onStreetViewClick }) {
     const map = mapInstanceRef.current;
     if (!map || !window.naver?.maps) return;
 
-    // Clear old markers and cluster
-    markersRef.current.forEach((m) => m.setMap(null));
-    markersRef.current = [];
+    // Clear old cluster first, then markers
     if (clusterRef.current) {
-      clusterRef.current.setMap(null);
+      try { clusterRef.current.setMap(null); } catch {}
       clusterRef.current = null;
+    }
+    markersRef.current.forEach((m) => { try { m.setMap(null); } catch {} });
+    markersRef.current = [];
+    if (infoWindowRef.current) {
+      try { infoWindowRef.current.close(); } catch {}
     }
 
     // Create markers
@@ -91,7 +94,7 @@ export default function Map({ data, onStreetViewClick }) {
 
       const marker = new window.naver.maps.Marker({
         position: new window.naver.maps.LatLng(item.latitude, item.longitude),
-        map: null, // managed by cluster
+        map: null,
         icon: {
           content: `<div style="width:12px;height:12px;background:${color};border:2px solid #fff;border-radius:50%;box-shadow:0 1px 3px rgba(0,0,0,0.3);cursor:pointer"></div>`,
           anchor: new window.naver.maps.Point(8, 8),
@@ -99,26 +102,19 @@ export default function Map({ data, onStreetViewClick }) {
         title: item.roadName || item.locationName,
       });
 
-      // Click handler - open info window
       window.naver.maps.Event.addListener(marker, 'click', () => {
         if (infoWindowRef.current) {
-          infoWindowRef.current.close();
+          try { infoWindowRef.current.close(); } catch {}
         }
-
-        const content = buildInfoContent(item);
-
         const infoWindow = new window.naver.maps.InfoWindow({
-          content: content,
+          content: buildInfoContent(item),
           borderWidth: 0,
           backgroundColor: 'transparent',
           anchorSize: new window.naver.maps.Size(0, 0),
           pixelOffset: new window.naver.maps.Point(0, -10),
         });
-
         infoWindow.open(map, marker);
         infoWindowRef.current = infoWindow;
-
-        // Attach click handler to street view button after DOM render
         setTimeout(() => {
           const btn = document.getElementById('naver-sv-btn');
           if (btn && onStreetViewClick) {
@@ -131,56 +127,48 @@ export default function Map({ data, onStreetViewClick }) {
     });
     markersRef.current = markers;
 
-    // Clustering
-    if (window.MarkerClustering) {
-      const htmlMarker1 = {
-        content: '<div style="cursor:pointer;width:40px;height:40px;line-height:40px;font-size:12px;color:#fff;text-align:center;background:#27ae60;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,0.3)"></div>',
-        size: new window.naver.maps.Size(40, 40),
-        anchor: new window.naver.maps.Point(20, 20),
-      };
-      const htmlMarker2 = {
-        content: '<div style="cursor:pointer;width:48px;height:48px;line-height:48px;font-size:13px;color:#fff;text-align:center;background:#2980b9;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,0.3)"></div>',
-        size: new window.naver.maps.Size(48, 48),
-        anchor: new window.naver.maps.Point(24, 24),
-      };
-      const htmlMarker3 = {
-        content: '<div style="cursor:pointer;width:56px;height:56px;line-height:56px;font-size:14px;color:#fff;text-align:center;background:#e67e22;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,0.3)"></div>',
-        size: new window.naver.maps.Size(56, 56),
-        anchor: new window.naver.maps.Point(28, 28),
-      };
-      const htmlMarker4 = {
-        content: '<div style="cursor:pointer;width:64px;height:64px;line-height:64px;font-size:15px;color:#fff;text-align:center;background:#e74c3c;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,0.3)"></div>',
-        size: new window.naver.maps.Size(64, 64),
-        anchor: new window.naver.maps.Point(32, 32),
-      };
-
-      const cluster = new MarkerClustering({
-        minClusterSize: 2,
-        maxZoom: 16,
-        map: map,
-        markers: markers,
-        disableClickZoom: false,
-        gridSize: 60,
-        icons: [htmlMarker1, htmlMarker2, htmlMarker3, htmlMarker4],
-        indexGenerator: [10, 100, 500, 1000],
-        stylingFunction: (clusterMarker, count) => {
-          const el = clusterMarker.getElement();
-          if (el) {
-            const div = el.querySelector('div');
-            if (div) div.textContent = count;
-          }
-        },
-      });
-      clusterRef.current = cluster;
-    } else {
-      // Fallback: show markers directly without clustering
-      markers.forEach((m) => m.setMap(map));
-    }
+    // Clustering - defer to next tick for DOM stability
+    const clusterTimeout = setTimeout(() => {
+      if (window.MarkerClustering) {
+        try {
+          const icons = [
+            { content: '<div style="cursor:pointer;width:40px;height:40px;line-height:40px;font-size:12px;color:#fff;text-align:center;background:#27ae60;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,0.3)"></div>', size: new window.naver.maps.Size(40, 40), anchor: new window.naver.maps.Point(20, 20) },
+            { content: '<div style="cursor:pointer;width:48px;height:48px;line-height:48px;font-size:13px;color:#fff;text-align:center;background:#2980b9;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,0.3)"></div>', size: new window.naver.maps.Size(48, 48), anchor: new window.naver.maps.Point(24, 24) },
+            { content: '<div style="cursor:pointer;width:56px;height:56px;line-height:56px;font-size:14px;color:#fff;text-align:center;background:#e67e22;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,0.3)"></div>', size: new window.naver.maps.Size(56, 56), anchor: new window.naver.maps.Point(28, 28) },
+            { content: '<div style="cursor:pointer;width:64px;height:64px;line-height:64px;font-size:15px;color:#fff;text-align:center;background:#e74c3c;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,0.3)"></div>', size: new window.naver.maps.Size(64, 64), anchor: new window.naver.maps.Point(32, 32) },
+          ];
+          const cluster = new MarkerClustering({
+            minClusterSize: 2,
+            maxZoom: 16,
+            map: map,
+            markers: markers,
+            disableClickZoom: false,
+            gridSize: 60,
+            icons: icons,
+            indexGenerator: [10, 100, 500, 1000],
+            stylingFunction: (clusterMarker, count) => {
+              const el = clusterMarker.getElement();
+              if (el) {
+                const div = el.querySelector('div');
+                if (div) div.textContent = count;
+              }
+            },
+          });
+          clusterRef.current = cluster;
+        } catch {
+          // Clustering failed - show markers directly
+          markers.forEach((m) => m.setMap(map));
+        }
+      } else {
+        markers.forEach((m) => m.setMap(map));
+      }
+    }, 200);
 
     return () => {
-      markersRef.current.forEach((m) => m.setMap(null));
+      clearTimeout(clusterTimeout);
+      markersRef.current.forEach((m) => { try { m.setMap(null); } catch {} });
       if (clusterRef.current) {
-        clusterRef.current.setMap(null);
+        try { clusterRef.current.setMap(null); } catch {}
         clusterRef.current = null;
       }
     };
