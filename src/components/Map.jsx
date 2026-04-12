@@ -63,7 +63,7 @@ export default function Map({ data, onStreetViewClick }) {
       const map = new window.naver.maps.Map(mapRef.current, {
         center: new window.naver.maps.LatLng(36.5, 127.5),
         zoom: 7,
-        minZoom: 5,
+        minZoom: 6,
         maxZoom: 18,
         zoomControl: true,
         zoomControlOptions: {
