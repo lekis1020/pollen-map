@@ -1,9 +1,11 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import { getAllergenInfo, getAllergenLevel, getPollenSeasonText, ALLERGEN_LEVELS } from '../data/allergenDatabase';
+import { groupByRoadSpecies } from '../utils/groupByRoad';
 import Legend from './Legend';
 import './Map.css';
 
 const MARKER_CAP = 2000;
+const POLYLINE_CAP = 1500;
 
 // 균등 샘플링: 전체 배열에서 cap개를 고르게 추출
 function sampleEven(arr, cap) {
@@ -14,18 +16,31 @@ function sampleEven(arr, cap) {
   return out;
 }
 
+function boundsIntersect(a, b) {
+  return !(
+    a.maxLat < b.minLat ||
+    a.minLat > b.maxLat ||
+    a.maxLng < b.minLng ||
+    a.minLng > b.maxLng
+  );
+}
+
 export default function Map({ data, onStreetViewClick }) {
   const mapRef = useRef(null);
   const mapInstanceRef = useRef(null);
   const markersRef = useRef([]);
+  const polylinesRef = useRef([]);
   const clusterRef = useRef(null);
   const infoWindowRef = useRef(null);
   const idleDebounceRef = useRef(null);
   const [bounds, setBounds] = useState(null);
   const [mapReady, setMapReady] = useState(false);
 
-  // Build info window HTML for a tree item
-  const buildInfoContent = useCallback((item) => {
+  // 데이터 변경 시 도로·수종 단위로 그룹화 (폴리라인 + 잔여 마커)
+  const grouped = useMemo(() => groupByRoadSpecies(data), [data]);
+
+  // Info content for individual tree marker
+  const buildMarkerInfo = useCallback((item) => {
     const level = getAllergenLevel(item.species);
     const levelInfo = ALLERGEN_LEVELS[level];
     const allergenInfo = getAllergenInfo(item.species);
@@ -47,10 +62,6 @@ export default function Map({ data, onStreetViewClick }) {
       <tr><td class="popup-label">꽃가루 시기</td><td>${getPollenSeasonText(allergenInfo.pollenMonths)}</td></tr>
       <tr><td class="popup-label">주요 증상</td><td class="popup-symptoms">${allergenInfo.symptoms}</td></tr>`;
     }
-    if (item.institution) {
-      rows += `
-      <tr><td class="popup-label">관리기관</td><td>${item.institution}</td></tr>`;
-    }
 
     return `<div class="tree-popup">
       <h3>${item.locationName || item.roadName}</h3>
@@ -59,7 +70,29 @@ export default function Map({ data, onStreetViewClick }) {
     </div>`;
   }, []);
 
-  // Initialize Naver Map (with polling for script load)
+  // Info content for polyline (group)
+  const buildPolylineInfo = useCallback((pl) => {
+    const level = getAllergenLevel(pl.species);
+    const levelInfo = ALLERGEN_LEVELS[level];
+    const allergenInfo = getAllergenInfo(pl.species);
+    let rows = `
+      <tr><td class="popup-label">지역</td><td>${pl.city} ${pl.district}</td></tr>
+      <tr><td class="popup-label">수종</td><td><strong>${pl.species}</strong></td></tr>
+      <tr><td class="popup-label">구간 그루수</td><td>${pl.count.toLocaleString()}본</td></tr>
+      <tr><td class="popup-label">알레르기 등급</td><td><span class="allergen-badge" style="background:${levelInfo.color}">${levelInfo.label}</span></td></tr>`;
+    if (allergenInfo) {
+      rows += `
+      <tr><td class="popup-label">꽃가루 시기</td><td>${getPollenSeasonText(allergenInfo.pollenMonths)}</td></tr>
+      <tr><td class="popup-label">주요 증상</td><td class="popup-symptoms">${allergenInfo.symptoms}</td></tr>`;
+    }
+    return `<div class="tree-popup">
+      <h3>${pl.roadName}</h3>
+      <table><tbody>${rows}</tbody></table>
+      <button class="street-view-btn" id="naver-sv-btn">대표지점 로드뷰</button>
+    </div>`;
+  }, []);
+
+  // Naver 지도 초기화
   useEffect(() => {
     let cancelled = false;
     let pollTimer;
@@ -113,38 +146,83 @@ export default function Map({ data, onStreetViewClick }) {
     };
   }, []);
 
-  // Update markers when data changes
+  // 폴리라인 + 싱글톤 마커 렌더
   useEffect(() => {
     const map = mapInstanceRef.current;
     if (!map || !window.naver?.maps) return;
 
-    // Clear old cluster first, then markers
+    // 기존 오버레이 정리
     if (clusterRef.current) {
       try { clusterRef.current.setMap(null); } catch {}
       clusterRef.current = null;
     }
     markersRef.current.forEach((m) => { try { m.setMap(null); } catch {} });
     markersRef.current = [];
+    polylinesRef.current.forEach((p) => { try { p.setMap(null); } catch {} });
+    polylinesRef.current = [];
     if (infoWindowRef.current) {
       try { infoWindowRef.current.close(); } catch {}
     }
 
-    // 뷰포트 기반 필터 + 마커 상한 (렌더 성능 보호)
+    const { polylines, markers: singletons } = grouped;
+
+    // 1) 폴리라인: 뷰포트 교차 + 상한
+    const visiblePolylines = bounds
+      ? polylines.filter((pl) => boundsIntersect(pl.bounds, bounds))
+      : polylines;
+    const cappedPolylines = visiblePolylines.slice(0, POLYLINE_CAP);
+
+    const plObjects = cappedPolylines.map((pl) => {
+      const level = getAllergenLevel(pl.species);
+      const color = ALLERGEN_LEVELS[level]?.color || '#3498db';
+      const polyline = new window.naver.maps.Polyline({
+        map,
+        path: pl.path.map((p) => new window.naver.maps.LatLng(p.lat, p.lng)),
+        strokeColor: color,
+        strokeOpacity: 0.85,
+        strokeWeight: 4,
+        strokeLineCap: 'round',
+        strokeLineJoin: 'round',
+        clickable: true,
+      });
+      window.naver.maps.Event.addListener(polyline, 'click', (e) => {
+        if (infoWindowRef.current) {
+          try { infoWindowRef.current.close(); } catch {}
+        }
+        const infoWindow = new window.naver.maps.InfoWindow({
+          content: buildPolylineInfo(pl),
+          borderWidth: 0,
+          backgroundColor: 'transparent',
+          anchorSize: new window.naver.maps.Size(0, 0),
+          pixelOffset: new window.naver.maps.Point(0, -10),
+        });
+        infoWindow.open(map, e.coord);
+        infoWindowRef.current = infoWindow;
+        setTimeout(() => {
+          const btn = document.getElementById('naver-sv-btn');
+          if (btn && onStreetViewClick) {
+            btn.addEventListener('click', () => onStreetViewClick(pl.representative));
+          }
+        }, 50);
+      });
+      return polyline;
+    });
+    polylinesRef.current = plObjects;
+
+    // 2) 싱글톤 마커: 뷰포트 + 샘플링 상한
     const inBounds = bounds
-      ? data.filter((it) =>
+      ? singletons.filter((it) =>
           it.latitude >= bounds.minLat &&
           it.latitude <= bounds.maxLat &&
           it.longitude >= bounds.minLng &&
           it.longitude <= bounds.maxLng
         )
-      : data;
-    const visible = sampleEven(inBounds, MARKER_CAP);
+      : singletons;
+    const visibleMarkers = sampleEven(inBounds, MARKER_CAP);
 
-    // Create markers
-    const markers = visible.map((item) => {
+    const markers = visibleMarkers.map((item) => {
       const level = getAllergenLevel(item.species);
       const color = ALLERGEN_LEVELS[level]?.color || '#3498db';
-
       const marker = new window.naver.maps.Marker({
         position: new window.naver.maps.LatLng(item.latitude, item.longitude),
         map: null,
@@ -154,13 +232,12 @@ export default function Map({ data, onStreetViewClick }) {
         },
         title: item.roadName || item.locationName,
       });
-
       window.naver.maps.Event.addListener(marker, 'click', () => {
         if (infoWindowRef.current) {
           try { infoWindowRef.current.close(); } catch {}
         }
         const infoWindow = new window.naver.maps.InfoWindow({
-          content: buildInfoContent(item),
+          content: buildMarkerInfo(item),
           borderWidth: 0,
           backgroundColor: 'transparent',
           anchorSize: new window.naver.maps.Size(0, 0),
@@ -175,14 +252,13 @@ export default function Map({ data, onStreetViewClick }) {
           }
         }, 50);
       });
-
       return marker;
     });
     markersRef.current = markers;
 
-    // Clustering - defer to next tick for DOM stability
+    // 3) 싱글톤에 대한 클러스터링
     const clusterTimeout = setTimeout(() => {
-      if (window.MarkerClustering) {
+      if (window.MarkerClustering && markers.length > 0) {
         try {
           const icons = [
             { content: '<div style="cursor:pointer;width:40px;height:40px;line-height:40px;font-size:12px;color:#fff;text-align:center;background:#27ae60;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,0.3)"></div>', size: new window.naver.maps.Size(40, 40), anchor: new window.naver.maps.Point(20, 20) },
@@ -193,11 +269,11 @@ export default function Map({ data, onStreetViewClick }) {
           const cluster = new MarkerClustering({
             minClusterSize: 2,
             maxZoom: 16,
-            map: map,
-            markers: markers,
+            map,
+            markers,
             disableClickZoom: false,
             gridSize: 60,
-            icons: icons,
+            icons,
             indexGenerator: [10, 100, 500, 1000],
             stylingFunction: (clusterMarker, count) => {
               const el = clusterMarker.getElement();
@@ -209,7 +285,6 @@ export default function Map({ data, onStreetViewClick }) {
           });
           clusterRef.current = cluster;
         } catch {
-          // Clustering failed - show markers directly
           markers.forEach((m) => m.setMap(map));
         }
       } else {
@@ -220,12 +295,13 @@ export default function Map({ data, onStreetViewClick }) {
     return () => {
       clearTimeout(clusterTimeout);
       markersRef.current.forEach((m) => { try { m.setMap(null); } catch {} });
+      polylinesRef.current.forEach((p) => { try { p.setMap(null); } catch {} });
       if (clusterRef.current) {
         try { clusterRef.current.setMap(null); } catch {}
         clusterRef.current = null;
       }
     };
-  }, [data, bounds, onStreetViewClick, buildInfoContent, mapReady]);
+  }, [grouped, bounds, onStreetViewClick, buildMarkerInfo, buildPolylineInfo, mapReady]);
 
   return (
     <div className="map-wrapper">

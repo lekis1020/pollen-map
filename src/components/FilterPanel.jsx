@@ -113,6 +113,23 @@ export default function FilterPanel({
           <span>알레르기 유발 수종만 보기</span>
         </label>
       </div>
+
+      <div className="filter-section data-sources">
+        <h3 className="data-sources-title">데이터 출처</h3>
+        <ul className="data-sources-list">
+          <li>
+            <strong>전국 가로수길</strong>
+            <span>공공데이터포털 · tn_pubr_public_sttree_stret_api</span>
+          </li>
+          <li>
+            <strong>서울 가로수 (개별)</strong>
+            <span>서울 열린데이터광장 · OA-1325 · 2022-10 갱신, 종로구 제외</span>
+          </li>
+        </ul>
+        <p className="data-sources-note">
+          ※ 좌표는 2012~2022년 조사 기준. 실제 로드뷰 촬영 시점과 차이가 있을 수 있습니다.
+        </p>
+      </div>
     </div>
   );
 }
