@@ -1,8 +1,4 @@
 .map-legend {
-  position: absolute;
-  bottom: 16px;
-  right: 16px;
-  z-index: 100;
   background: white;
   padding: 10px 14px;
   border-radius: 8px;

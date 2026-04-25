@@ -33,8 +33,99 @@ export default function Map({ data, onStreetViewClick }) {
   const clusterRef = useRef(null);
   const infoWindowRef = useRef(null);
   const idleDebounceRef = useRef(null);
+  const locationMarkerRef = useRef(null);
+  const locationCircleRef = useRef(null);
   const [bounds, setBounds] = useState(null);
   const [mapReady, setMapReady] = useState(false);
+  const [gpsState, setGpsState] = useState('idle'); // idle | loading | active | error
+  const [gpsError, setGpsError] = useState(null);
+
+  // GPS 현재 위치 기능
+  const handleGpsClick = useCallback(() => {
+    const map = mapInstanceRef.current;
+    if (!map || !window.naver?.maps) return;
+
+    if (!navigator.geolocation) {
+      setGpsState('error');
+      setGpsError('이 브라우저에서는 위치 서비스를 지원하지 않습니다.');
+      setTimeout(() => { setGpsState('idle'); setGpsError(null); }, 3000);
+      return;
+    }
+
+    setGpsState('loading');
+    setGpsError(null);
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude, accuracy } = position.coords;
+        const latlng = new window.naver.maps.LatLng(latitude, longitude);
+
+        // 기존 위치 마커 제거
+        if (locationMarkerRef.current) {
+          locationMarkerRef.current.setMap(null);
+        }
+        if (locationCircleRef.current) {
+          locationCircleRef.current.setMap(null);
+        }
+
+        // 정확도 원 (반경 표시)
+        const circle = new window.naver.maps.Circle({
+          map,
+          center: latlng,
+          radius: Math.min(accuracy, 500),
+          fillColor: '#4A90D9',
+          fillOpacity: 0.12,
+          strokeColor: '#4A90D9',
+          strokeOpacity: 0.3,
+          strokeWeight: 1,
+          clickable: false,
+        });
+        locationCircleRef.current = circle;
+
+        // 현재 위치 마커 (파란 점 + 펄스 애니메이션)
+        const marker = new window.naver.maps.Marker({
+          position: latlng,
+          map,
+          icon: {
+            content: `<div class="gps-location-marker"><div class="gps-dot"></div><div class="gps-pulse"></div></div>`,
+            anchor: new window.naver.maps.Point(18, 18),
+          },
+          zIndex: 1000,
+        });
+        locationMarkerRef.current = marker;
+
+        // 지도 이동 및 줌
+        map.setCenter(latlng);
+        map.setZoom(15);
+
+        setGpsState('active');
+      },
+      (err) => {
+        let msg;
+        switch (err.code) {
+          case err.PERMISSION_DENIED:
+            msg = '위치 권한이 거부되었습니다. 브라우저 설정에서 허용해 주세요.';
+            break;
+          case err.POSITION_UNAVAILABLE:
+            msg = '위치 정보를 사용할 수 없습니다.';
+            break;
+          case err.TIMEOUT:
+            msg = '위치 요청 시간이 초과되었습니다.';
+            break;
+          default:
+            msg = '위치를 가져올 수 없습니다.';
+        }
+        setGpsState('error');
+        setGpsError(msg);
+        setTimeout(() => { setGpsState('idle'); setGpsError(null); }, 4000);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 60000,
+      }
+    );
+  }, []);
 
   // 데이터 변경 시 도로·수종 단위로 그룹화 (폴리라인 + 잔여 마커)
   const grouped = useMemo(() => groupByRoadSpecies(data), [data]);
@@ -306,7 +397,32 @@ export default function Map({ data, onStreetViewClick }) {
   return (
     <div className="map-wrapper">
       <div ref={mapRef} className="map-container" />
-      <Legend />
+      <div className="map-controls">
+        <button
+          className={`gps-button ${gpsState}`}
+          onClick={handleGpsClick}
+          disabled={gpsState === 'loading'}
+          aria-label="현재 위치로 이동"
+          title="현재 위치"
+        >
+          {gpsState === 'loading' ? (
+            <svg className="gps-spinner" viewBox="0 0 24 24" width="22" height="22">
+              <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" strokeWidth="2.5" strokeDasharray="50 20" />
+            </svg>
+          ) : (
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="12" cy="12" r="3" fill={gpsState === 'active' ? '#4A90D9' : 'none'} />
+              <circle cx="12" cy="12" r="8" />
+              <line x1="12" y1="2" x2="12" y2="4" />
+              <line x1="12" y1="20" x2="12" y2="22" />
+              <line x1="2" y1="12" x2="4" y2="12" />
+              <line x1="20" y1="12" x2="22" y2="12" />
+            </svg>
+          )}
+        </button>
+        <Legend />
+      </div>
+      {gpsError && <div className="gps-error-toast">{gpsError}</div>}
     </div>
   );
 }
