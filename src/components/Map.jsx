@@ -39,6 +39,7 @@ export default function Map({ data, onStreetViewClick }) {
   const [mapReady, setMapReady] = useState(false);
   const [gpsState, setGpsState] = useState('idle'); // idle | loading | active | error
   const [gpsError, setGpsError] = useState(null);
+  const [showPermissionGuide, setShowPermissionGuide] = useState(false);
 
   // GPS 현재 위치 기능
   const handleGpsClick = useCallback(() => {
@@ -101,11 +102,15 @@ export default function Map({ data, onStreetViewClick }) {
         setGpsState('active');
       },
       (err) => {
+        if (err.code === 1) {
+          // PERMISSION_DENIED → 안내 패널 표시
+          setGpsState('error');
+          setShowPermissionGuide(true);
+          setTimeout(() => setGpsState('idle'), 300);
+          return;
+        }
         let msg;
         switch (err.code) {
-          case err.PERMISSION_DENIED:
-            msg = '위치 권한이 거부되었습니다. 브라우저 설정에서 허용해 주세요.';
-            break;
           case err.POSITION_UNAVAILABLE:
             msg = '위치 정보를 사용할 수 없습니다.';
             break;
@@ -423,6 +428,71 @@ export default function Map({ data, onStreetViewClick }) {
         <Legend />
       </div>
       {gpsError && <div className="gps-error-toast">{gpsError}</div>}
+      {showPermissionGuide && (
+        <PermissionGuide onClose={() => setShowPermissionGuide(false)} />
+      )}
+    </div>
+  );
+}
+
+function detectPlatform() {
+  const ua = navigator.userAgent;
+  if (/iPad|iPhone|iPod/.test(ua)) return 'ios';
+  if (/Android/.test(ua)) return 'android';
+  return 'desktop';
+}
+
+function PermissionGuide({ onClose }) {
+  const platform = detectPlatform();
+
+  const guides = {
+    ios: [
+      { icon: '1', text: '아이폰 설정 앱을 엽니다' },
+      { icon: '2', text: '개인정보 보호 및 보안 → 위치 서비스를 탭합니다' },
+      { icon: '3', text: '위치 서비스를 켜고, 아래 목록에서 사용 중인 브라우저(Safari/Chrome)를 탭합니다' },
+      { icon: '4', text: '"앱을 사용하는 동안" 또는 "다음번에 묻기"를 선택합니다' },
+      { icon: '5', text: '이 페이지로 돌아와 위치 버튼을 다시 눌러주세요' },
+    ],
+    android: [
+      { icon: '1', text: '브라우저 주소창 왼쪽의 자물쇠(🔒) 아이콘을 탭합니다' },
+      { icon: '2', text: '"권한" 또는 "사이트 설정"을 탭합니다' },
+      { icon: '3', text: '"위치"를 "허용"으로 변경합니다' },
+      { icon: '4', text: '페이지를 새로고침한 뒤 위치 버튼을 다시 눌러주세요' },
+    ],
+    desktop: [
+      { icon: '1', text: '브라우저 주소창 왼쪽의 자물쇠(🔒) 또는 설정 아이콘을 클릭합니다' },
+      { icon: '2', text: '"사이트 설정" 또는 "이 사이트에 대한 권한"을 클릭합니다' },
+      { icon: '3', text: '"위치" 항목을 "허용"으로 변경합니다' },
+      { icon: '4', text: '페이지를 새로고침(F5)한 뒤 위치 버튼을 다시 클릭해 주세요' },
+    ],
+  };
+
+  const titles = {
+    ios: 'iPhone에서 위치 권한 허용하기',
+    android: 'Android에서 위치 권한 허용하기',
+    desktop: 'PC 브라우저에서 위치 권한 허용하기',
+  };
+
+  const steps = guides[platform];
+
+  return (
+    <div className="permission-guide-overlay" onClick={onClose}>
+      <div className="permission-guide" onClick={(e) => e.stopPropagation()}>
+        <button className="permission-guide-close" onClick={onClose} aria-label="닫기">&times;</button>
+        <div className="permission-guide-header">
+          <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="#e67e22" strokeWidth="2">
+            <circle cx="12" cy="12" r="10" />
+            <line x1="12" y1="8" x2="12" y2="12" />
+            <line x1="12" y1="16" x2="12.01" y2="16" />
+          </svg>
+          <h3>{titles[platform]}</h3>
+        </div>
+        <ol className="permission-guide-steps">
+          {steps.map((step, i) => (
+            <li key={i}>{step.text}</li>
+          ))}
+        </ol>
+      </div>
     </div>
   );
 }
