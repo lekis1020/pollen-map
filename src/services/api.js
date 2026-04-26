@@ -91,8 +91,9 @@ export async function fetchTreeData({ city, district, pageNo = 1, numOfRows = 10
 }
 
 // 서울 개별 가로수 정적 JSON 로드 (OA-1325, ~257k 그루)
+// 컬럼형 포맷 + 사전 인코딩 → 7.4MB (기존 29MB 대비 75%↓)
 // IndexedDB 캐시: 변환된 객체를 저장하여 재방문 시 네트워크+파싱+변환 생략
-const SEOUL_CACHE_KEY = 'seoul-trees-v1';
+const SEOUL_CACHE_KEY = 'seoul-trees-v2';
 const SEOUL_CACHE_TTL = 24 * 60 * 60 * 1000; // 24시간
 
 export async function loadSeoulTrees() {
@@ -102,28 +103,34 @@ export async function loadSeoulTrees() {
     return cached;
   }
 
-  // 2) 네트워크에서 로드 + 변환
+  // 2) 네트워크에서 컬럼형 JSON 로드 + 행 객체로 변환
   const res = await fetch('/data/seoul-trees.json');
   if (!res.ok) throw new Error(`서울 가로수 데이터 로드 실패: ${res.status}`);
   const data = await res.json();
-  const items = data.items.map((it) => ({
-    id: it.id,
-    sourceType: 'seoulTree',
-    sourceLabel: '서울 가로수 (개별)',
-    roadName: it.road,
-    locationName: it.road,
-    city: '서울특별시',
-    district: it.gu,
-    species: it.sp,
-    treeCount: 1,
-    plantCount: 1,
-    latitude: it.lat,
-    longitude: it.lng,
-    institution: '',
-    phone: '',
-    referenceDate: data.generatedAt || '',
-    extra: {},
-  }));
+  const { dicts, lat, lng, sp, gu, road, generatedAt } = data;
+  const count = lat.length;
+  const items = new Array(count);
+
+  for (let i = 0; i < count; i++) {
+    items[i] = {
+      id: `st_${i}`,
+      sourceType: 'seoulTree',
+      sourceLabel: '서울 가로수 (개별)',
+      roadName: dicts.road[road[i]],
+      locationName: dicts.road[road[i]],
+      city: '서울특별시',
+      district: dicts.gu[gu[i]],
+      species: dicts.sp[sp[i]],
+      treeCount: 1,
+      plantCount: 1,
+      latitude: lat[i],
+      longitude: lng[i],
+      institution: '',
+      phone: '',
+      referenceDate: generatedAt || '',
+      extra: {},
+    };
+  }
 
   // 3) 백그라운드로 IndexedDB에 저장 (UI 차단하지 않음)
   idbSet(SEOUL_CACHE_KEY, items);

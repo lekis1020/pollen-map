@@ -1,6 +1,5 @@
-import { useEffect, useRef, useState, useMemo, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { getAllergenInfo, getAllergenLevel, getPollenSeasonText, ALLERGEN_LEVELS } from '../data/allergenDatabase';
-import { groupByRoadSpecies } from '../utils/groupByRoad';
 import Legend from './Legend';
 import './Map.css';
 
@@ -132,8 +131,28 @@ export default function Map({ data, onStreetViewClick }) {
     );
   }, []);
 
-  // 데이터 변경 시 도로·수종 단위로 그룹화 (폴리라인 + 잔여 마커)
-  const grouped = useMemo(() => groupByRoadSpecies(data), [data]);
+  // Web Worker로 도로·수종 단위 그룹화 (메인 스레드 차단 없음)
+  const workerRef = useRef(null);
+  const [grouped, setGrouped] = useState({ polylines: [], markers: [] });
+
+  useEffect(() => {
+    if (!workerRef.current) {
+      workerRef.current = new Worker(
+        new URL('../workers/groupWorker.js', import.meta.url),
+        { type: 'module' }
+      );
+      workerRef.current.onmessage = (e) => setGrouped(e.data);
+    }
+    if (data.length > 0) {
+      workerRef.current.postMessage(data);
+    } else {
+      setGrouped({ polylines: [], markers: [] });
+    }
+  }, [data]);
+
+  useEffect(() => {
+    return () => workerRef.current?.terminate();
+  }, []);
 
   // Info content for individual tree marker
   const buildMarkerInfo = useCallback((item) => {

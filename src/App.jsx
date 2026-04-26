@@ -12,6 +12,7 @@ function App() {
   const [nationwideData, setNationwideData] = useState([]);
   const [seoulData, setSeoulData] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadingStage, setLoadingStage] = useState(''); // nationwide | seoul | processing
   const [error, setError] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [streetViewTree, setStreetViewTree] = useState(null);
@@ -40,6 +41,7 @@ function App() {
         }
 
         setLoading(true);
+        setLoadingStage('nationwide');
         const result = await fetchAllData((firstPage) => {
           setNationwideData(firstPage.items);
           setLoading(false);
@@ -58,9 +60,20 @@ function App() {
   // 서울 개별 가로수(OA-1325) 백그라운드 로드
   useEffect(() => {
     let cancelled = false;
+    setLoadingStage('seoul');
     loadSeoulTrees()
-      .then((seoul) => { if (!cancelled) setSeoulData(seoul); })
-      .catch((err) => console.warn('서울 가로수 로드 실패:', err.message));
+      .then((seoul) => {
+        if (!cancelled) {
+          setLoadingStage('processing');
+          setSeoulData(seoul);
+          // 병합·그룹화 완료 후 stage 클리어 (다음 렌더에서 useMemo 실행)
+          requestAnimationFrame(() => { if (!cancelled) setLoadingStage(''); });
+        }
+      })
+      .catch((err) => {
+        console.warn('서울 가로수 로드 실패:', err.message);
+        if (!cancelled) setLoadingStage('');
+      });
     return () => { cancelled = true; };
   }, []);
 
@@ -104,9 +117,12 @@ function App() {
           식물 알레르기 지도
         </h1>
         <div className="header-info">
-          <span className="data-badge">
+          <span className={`data-badge${loadingStage ? ' loading-badge' : ''}`}>
             {filteredData.length.toLocaleString()}개 표시
-            {loading ? ' (로딩 중...)' : ''}
+            {loadingStage === 'nationwide' && ' (전국 데이터...)'}
+            {loadingStage === 'seoul' && ' (서울 데이터...)'}
+            {loadingStage === 'processing' && ' (처리 중...)'}
+            {loading && !loadingStage && rawData.length > 0 ? ' (로딩 중...)' : ''}
           </span>
         </div>
       </header>
@@ -134,7 +150,12 @@ function App() {
           {loading && rawData.length === 0 ? (
             <div className="loading-overlay">
               <div className="spinner" />
-              <p>식물 데이터를 불러오는 중...</p>
+              <p>
+                {loadingStage === 'nationwide' && '전국 가로수 데이터를 불러오는 중...'}
+                {loadingStage === 'seoul' && '서울 개별 가로수 데이터를 불러오는 중...'}
+                {loadingStage === 'processing' && '데이터를 처리하는 중...'}
+                {!loadingStage && '식물 데이터를 불러오는 중...'}
+              </p>
             </div>
           ) : (
             <Map data={filteredData} onStreetViewClick={setStreetViewTree} />
