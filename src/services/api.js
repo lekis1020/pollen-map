@@ -1,5 +1,6 @@
 import { DATA_SOURCES, getEnabledSources } from './dataSources';
 import { NORMALIZERS } from './normalizers';
+import { idbGet, idbSet } from './idbCache';
 
 const API_BASE_URL = 'https://api.data.go.kr/openapi';
 
@@ -90,11 +91,22 @@ export async function fetchTreeData({ city, district, pageNo = 1, numOfRows = 10
 }
 
 // 서울 개별 가로수 정적 JSON 로드 (OA-1325, ~257k 그루)
+// IndexedDB 캐시: 변환된 객체를 저장하여 재방문 시 네트워크+파싱+변환 생략
+const SEOUL_CACHE_KEY = 'seoul-trees-v1';
+const SEOUL_CACHE_TTL = 24 * 60 * 60 * 1000; // 24시간
+
 export async function loadSeoulTrees() {
+  // 1) IndexedDB 캐시 확인
+  const cached = await idbGet(SEOUL_CACHE_KEY, SEOUL_CACHE_TTL);
+  if (cached && cached.length > 0) {
+    return cached;
+  }
+
+  // 2) 네트워크에서 로드 + 변환
   const res = await fetch('/data/seoul-trees.json');
   if (!res.ok) throw new Error(`서울 가로수 데이터 로드 실패: ${res.status}`);
   const data = await res.json();
-  return data.items.map((it) => ({
+  const items = data.items.map((it) => ({
     id: it.id,
     sourceType: 'seoulTree',
     sourceLabel: '서울 가로수 (개별)',
@@ -112,6 +124,11 @@ export async function loadSeoulTrees() {
     referenceDate: data.generatedAt || '',
     extra: {},
   }));
+
+  // 3) 백그라운드로 IndexedDB에 저장 (UI 차단하지 않음)
+  idbSet(SEOUL_CACHE_KEY, items);
+
+  return items;
 }
 
 // 2단계 로드: 첫 페이지 즉시 반환 → 나머지 완료 후 콜백
