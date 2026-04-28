@@ -126,26 +126,28 @@ export default function Map({ data, onStreetViewClick }) {
           setTimeout(() => setGpsState('idle'), 300);
           return;
         }
-        // TIMEOUT (code 3) — 고정밀도 실패 시 저정밀도로 재시도
-        if (err.code === 3) {
+        // TIMEOUT (code 3) 또는 POSITION_UNAVAILABLE (code 2) — 저정밀도로 재시도
+        if (err.code === 2 || err.code === 3) {
           navigator.geolocation.getCurrentPosition(
             showLocation,
             (retryErr) => {
               setGpsState('error');
-              setGpsError(
-                retryErr.code === 1
-                  ? '위치 권한이 거부되었습니다.'
-                  : '위치를 가져올 수 없습니다. 잠시 후 다시 시도해 주세요.'
-              );
-              setTimeout(() => { setGpsState('idle'); setGpsError(null); }, 4000);
+              if (retryErr.code === 1) {
+                setGpsError('위치 권한이 거부되었습니다.');
+              } else if (retryErr.code === 2) {
+                setGpsError('위치 서비스를 사용할 수 없습니다. 기기의 위치 서비스가 켜져 있는지 확인해 주세요.');
+              } else {
+                setGpsError('위치를 가져올 수 없습니다. 잠시 후 다시 시도해 주세요.');
+              }
+              setTimeout(() => { setGpsState('idle'); setGpsError(null); }, 5000);
             },
             { enableHighAccuracy: false, timeout: 15000, maximumAge: 300000 }
           );
           return;
         }
-        // POSITION_UNAVAILABLE (code 2) 및 기타
+        // 기타 에러
         setGpsState('error');
-        setGpsError('위치 정보를 사용할 수 없습니다.');
+        setGpsError('위치를 가져올 수 없습니다.');
         setTimeout(() => { setGpsState('idle'); setGpsError(null); }, 4000);
       },
       { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 }
@@ -493,23 +495,23 @@ function PermissionGuide({ onClose }) {
 
   const guides = {
     ios: [
-      { icon: '1', text: '아이폰 설정 앱을 엽니다' },
-      { icon: '2', text: '개인정보 보호 및 보안 → 위치 서비스를 탭합니다' },
-      { icon: '3', text: '위치 서비스를 켜고, 아래 목록에서 사용 중인 브라우저(Safari/Chrome)를 탭합니다' },
-      { icon: '4', text: '"앱을 사용하는 동안" 또는 "다음번에 묻기"를 선택합니다' },
-      { icon: '5', text: '이 페이지로 돌아와 위치 버튼을 다시 눌러주세요' },
+      { text: '아이폰 설정 앱을 엽니다' },
+      { text: '개인정보 보호 및 보안 → 위치 서비스가 켜져 있는지 확인합니다' },
+      { text: '아래 목록에서 사용 중인 브라우저(Safari/Chrome)를 탭합니다' },
+      { text: '"앱을 사용하는 동안" 또는 "다음번에 묻기"를 선택합니다' },
+      { text: '이 페이지로 돌아와 위치 버튼을 다시 눌러주세요' },
     ],
     android: [
-      { icon: '1', text: '브라우저 주소창 왼쪽의 자물쇠(🔒) 아이콘을 탭합니다' },
-      { icon: '2', text: '"권한" 또는 "사이트 설정"을 탭합니다' },
-      { icon: '3', text: '"위치"를 "허용"으로 변경합니다' },
-      { icon: '4', text: '페이지를 새로고침한 뒤 위치 버튼을 다시 눌러주세요' },
+      { text: '기기 설정 → 위치에서 위치 서비스가 켜져 있는지 확인합니다' },
+      { text: '브라우저 주소창 왼쪽의 자물쇠 아이콘을 탭합니다' },
+      { text: '"권한" 또는 "사이트 설정"에서 "위치"를 "허용"으로 변경합니다' },
+      { text: '페이지를 새로고침한 뒤 위치 버튼을 다시 눌러주세요' },
     ],
     desktop: [
-      { icon: '1', text: '브라우저 주소창 왼쪽의 자물쇠(🔒) 또는 설정 아이콘을 클릭합니다' },
-      { icon: '2', text: '"사이트 설정" 또는 "이 사이트에 대한 권한"을 클릭합니다' },
-      { icon: '3', text: '"위치" 항목을 "허용"으로 변경합니다' },
-      { icon: '4', text: '페이지를 새로고침(F5)한 뒤 위치 버튼을 다시 클릭해 주세요' },
+      { text: 'OS 위치 서비스 확인: Mac → 시스템 설정 → 개인정보 보호 → 위치 서비스 켜기 / Windows → 설정 → 개인정보 → 위치 켜기' },
+      { text: '브라우저 주소창 왼쪽의 자물쇠 또는 설정 아이콘을 클릭합니다' },
+      { text: '"사이트 설정"에서 "위치" 항목을 "허용"으로 변경합니다' },
+      { text: '페이지를 새로고침(F5)한 뒤 위치 버튼을 다시 클릭해 주세요' },
     ],
   };
 
