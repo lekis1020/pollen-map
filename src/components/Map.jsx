@@ -1,6 +1,5 @@
-import { useEffect, useRef, useState, useMemo, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { getAllergenInfo, getAllergenLevel, getPollenSeasonText, ALLERGEN_LEVELS } from '../data/allergenDatabase';
-import { groupByRoadSpecies } from '../utils/groupByRoad';
 import Legend from './Legend';
 import './Map.css';
 
@@ -41,11 +40,71 @@ export default function Map({ data, onStreetViewClick }) {
   const [gpsError, setGpsError] = useState(null);
   const [showPermissionGuide, setShowPermissionGuide] = useState(false);
 
-  // GPS 현재 위치 기능
-  const handleGpsClick = useCallback(() => {
+  // 위치 마커를 지도에 표시하는 공통 함수
+  const placeLocationMarker = useCallback((lat, lng, accuracy, zoomTo) => {
     const map = mapInstanceRef.current;
     if (!map || !window.naver?.maps) return;
 
+    const latlng = new window.naver.maps.LatLng(lat, lng);
+
+    if (locationMarkerRef.current) locationMarkerRef.current.setMap(null);
+    if (locationCircleRef.current) locationCircleRef.current.setMap(null);
+
+    if (accuracy > 0) {
+      locationCircleRef.current = new window.naver.maps.Circle({
+        map, center: latlng,
+        radius: Math.min(accuracy, 3000),
+        fillColor: '#4A90D9', fillOpacity: 0.1,
+        strokeColor: '#4A90D9', strokeOpacity: 0.25, strokeWeight: 1,
+        clickable: false,
+      });
+    }
+
+    locationMarkerRef.current = new window.naver.maps.Marker({
+      position: latlng, map,
+      icon: {
+        content: `<div class="gps-location-marker"><div class="gps-dot"></div><div class="gps-pulse"></div></div>`,
+        anchor: new window.naver.maps.Point(18, 18),
+      },
+      zIndex: 1000,
+    });
+
+    map.setCenter(latlng);
+    if (zoomTo) map.setZoom(zoomTo);
+    setGpsState('active');
+  }, []);
+
+  // GPS 현재 위치 — 위치 획득 성공 시 마커 표시 및 지도 이동
+  const showLocation = useCallback((position) => {
+    const { latitude, longitude, accuracy } = position.coords;
+    placeLocationMarker(latitude, longitude, accuracy, 15);
+
+    // 정확도가 1km 이상이면 경고
+    if (accuracy > 1000) {
+      setGpsError(`위치 정확도가 낮습니다 (약 ${Math.round(accuracy / 1000)}km). 지도를 길게 눌러 위치를 직접 지정할 수 있습니다.`);
+      setTimeout(() => setGpsError(null), 6000);
+    }
+  }, [placeLocationMarker]);
+
+  // GPS 현재 위치 기능
+  const handleGpsClick = useCallback(() => {
+    // 1) 보안 컨텍스트(HTTPS) 확인
+    if (!window.isSecureContext) {
+      setGpsState('error');
+      setGpsError('위치 서비스는 HTTPS에서만 사용할 수 있습니다.');
+      setTimeout(() => { setGpsState('idle'); setGpsError(null); }, 4000);
+      return;
+    }
+
+    // 2) 지도 로딩 대기 안내
+    if (!mapInstanceRef.current || !window.naver?.maps) {
+      setGpsState('error');
+      setGpsError('지도를 불러오는 중입니다. 잠시 후 다시 시도해 주세요.');
+      setTimeout(() => { setGpsState('idle'); setGpsError(null); }, 3000);
+      return;
+    }
+
+    // 3) Geolocation API 지원 확인
     if (!navigator.geolocation) {
       setGpsState('error');
       setGpsError('이 브라우저에서는 위치 서비스를 지원하지 않습니다.');
@@ -56,84 +115,65 @@ export default function Map({ data, onStreetViewClick }) {
     setGpsState('loading');
     setGpsError(null);
 
+    // 4) 고정밀도 시도 → 실패 시 저정밀도로 재시도
     navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const { latitude, longitude, accuracy } = position.coords;
-        const latlng = new window.naver.maps.LatLng(latitude, longitude);
-
-        // 기존 위치 마커 제거
-        if (locationMarkerRef.current) {
-          locationMarkerRef.current.setMap(null);
-        }
-        if (locationCircleRef.current) {
-          locationCircleRef.current.setMap(null);
-        }
-
-        // 정확도 원 (반경 표시)
-        const circle = new window.naver.maps.Circle({
-          map,
-          center: latlng,
-          radius: Math.min(accuracy, 500),
-          fillColor: '#4A90D9',
-          fillOpacity: 0.12,
-          strokeColor: '#4A90D9',
-          strokeOpacity: 0.3,
-          strokeWeight: 1,
-          clickable: false,
-        });
-        locationCircleRef.current = circle;
-
-        // 현재 위치 마커 (파란 점 + 펄스 애니메이션)
-        const marker = new window.naver.maps.Marker({
-          position: latlng,
-          map,
-          icon: {
-            content: `<div class="gps-location-marker"><div class="gps-dot"></div><div class="gps-pulse"></div></div>`,
-            anchor: new window.naver.maps.Point(18, 18),
-          },
-          zIndex: 1000,
-        });
-        locationMarkerRef.current = marker;
-
-        // 지도 이동 및 줌
-        map.setCenter(latlng);
-        map.setZoom(15);
-
-        setGpsState('active');
-      },
+      showLocation,
       (err) => {
+        // PERMISSION_DENIED (code 1)
         if (err.code === 1) {
-          // PERMISSION_DENIED → 안내 패널 표시
           setGpsState('error');
           setShowPermissionGuide(true);
           setTimeout(() => setGpsState('idle'), 300);
           return;
         }
-        let msg;
-        switch (err.code) {
-          case err.POSITION_UNAVAILABLE:
-            msg = '위치 정보를 사용할 수 없습니다.';
-            break;
-          case err.TIMEOUT:
-            msg = '위치 요청 시간이 초과되었습니다.';
-            break;
-          default:
-            msg = '위치를 가져올 수 없습니다.';
+        // TIMEOUT (code 3) — 고정밀도 실패 시 저정밀도로 재시도
+        if (err.code === 3) {
+          navigator.geolocation.getCurrentPosition(
+            showLocation,
+            (retryErr) => {
+              setGpsState('error');
+              setGpsError(
+                retryErr.code === 1
+                  ? '위치 권한이 거부되었습니다.'
+                  : '위치를 가져올 수 없습니다. 잠시 후 다시 시도해 주세요.'
+              );
+              setTimeout(() => { setGpsState('idle'); setGpsError(null); }, 4000);
+            },
+            { enableHighAccuracy: false, timeout: 15000, maximumAge: 300000 }
+          );
+          return;
         }
+        // POSITION_UNAVAILABLE (code 2) 및 기타
         setGpsState('error');
-        setGpsError(msg);
+        setGpsError('위치 정보를 사용할 수 없습니다.');
         setTimeout(() => { setGpsState('idle'); setGpsError(null); }, 4000);
       },
-      {
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 60000,
-      }
+      { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 }
     );
-  }, []);
+  }, [showLocation]);
 
-  // 데이터 변경 시 도로·수종 단위로 그룹화 (폴리라인 + 잔여 마커)
-  const grouped = useMemo(() => groupByRoadSpecies(data), [data]);
+  // Web Worker로 도로·수종 단위 그룹화 (메인 스레드 차단 없음)
+  const workerRef = useRef(null);
+  const [grouped, setGrouped] = useState({ polylines: [], markers: [] });
+
+  useEffect(() => {
+    if (!workerRef.current) {
+      workerRef.current = new Worker(
+        new URL('../workers/groupWorker.js', import.meta.url),
+        { type: 'module' }
+      );
+      workerRef.current.onmessage = (e) => setGrouped(e.data);
+    }
+    if (data.length > 0) {
+      workerRef.current.postMessage(data);
+    } else {
+      setGrouped({ polylines: [], markers: [] });
+    }
+  }, [data]);
+
+  useEffect(() => {
+    return () => workerRef.current?.terminate();
+  }, []);
 
   // Info content for individual tree marker
   const buildMarkerInfo = useCallback((item) => {
@@ -229,6 +269,12 @@ export default function Map({ data, onStreetViewClick }) {
       };
       window.naver.maps.Event.addListener(map, 'idle', updateBounds);
       updateBounds();
+
+      // 지도 길게 누르기 → 수동 위치 지정
+      window.naver.maps.Event.addListener(map, 'rightclick', (e) => {
+        placeLocationMarker(e.coord.lat(), e.coord.lng(), 0, null);
+        setGpsError(null);
+      });
 
       setMapReady(true);
     };
