@@ -86,9 +86,55 @@ export default function Map({ data, onStreetViewClick }) {
     }
   }, [placeLocationMarker]);
 
+  // 권한 변경 감지 리스너 해제용
+  const permissionListenerRef = useRef(null);
+
+  // 실제 위치 요청 — 고정밀도 → 저정밀도 재시도
+  const performGeolocation = useCallback(() => {
+    setGpsState('loading');
+    setGpsError(null);
+
+    navigator.geolocation.getCurrentPosition(
+      showLocation,
+      (err) => {
+        if (err.code === 1) {
+          setGpsState('error');
+          setShowPermissionGuide(true);
+          setTimeout(() => setGpsState('idle'), 300);
+          return;
+        }
+        if (err.code === 2 || err.code === 3) {
+          // OS/네트워크 기반 측위가 느린 경우(특히 macOS CoreLocation cold-start) 저정밀도로 재시도
+          navigator.geolocation.getCurrentPosition(
+            showLocation,
+            (retryErr) => {
+              setGpsState('error');
+              if (retryErr.code === 1) {
+                setShowPermissionGuide(true);
+                setTimeout(() => setGpsState('idle'), 300);
+                return;
+              }
+              if (retryErr.code === 2) {
+                setGpsError('위치 서비스를 사용할 수 없습니다. 기기의 위치 서비스가 켜져 있는지 확인해 주세요.');
+              } else {
+                setGpsError('위치 확인이 오래 걸립니다. 잠시 후 다시 시도해 주세요.');
+              }
+              setTimeout(() => { setGpsState('idle'); setGpsError(null); }, 5000);
+            },
+            { enableHighAccuracy: false, timeout: 25000, maximumAge: 0 }
+          );
+          return;
+        }
+        setGpsState('error');
+        setGpsError('위치를 가져올 수 없습니다.');
+        setTimeout(() => { setGpsState('idle'); setGpsError(null); }, 4000);
+      },
+      { enableHighAccuracy: true, timeout: 12000, maximumAge: 60000 }
+    );
+  }, [showLocation]);
+
   // GPS 현재 위치 기능
-  const handleGpsClick = useCallback(() => {
-    // 1) 보안 컨텍스트(HTTPS) 확인
+  const handleGpsClick = useCallback(async () => {
     if (!window.isSecureContext) {
       setGpsState('error');
       setGpsError('위치 서비스는 HTTPS에서만 사용할 수 있습니다.');
@@ -96,7 +142,6 @@ export default function Map({ data, onStreetViewClick }) {
       return;
     }
 
-    // 2) 지도 로딩 대기 안내
     if (!mapInstanceRef.current || !window.naver?.maps) {
       setGpsState('error');
       setGpsError('지도를 불러오는 중입니다. 잠시 후 다시 시도해 주세요.');
@@ -104,7 +149,6 @@ export default function Map({ data, onStreetViewClick }) {
       return;
     }
 
-    // 3) Geolocation API 지원 확인
     if (!navigator.geolocation) {
       setGpsState('error');
       setGpsError('이 브라우저에서는 위치 서비스를 지원하지 않습니다.');
@@ -112,47 +156,48 @@ export default function Map({ data, onStreetViewClick }) {
       return;
     }
 
-    setGpsState('loading');
-    setGpsError(null);
-
-    // 4) 고정밀도 시도 → 실패 시 저정밀도로 재시도
-    navigator.geolocation.getCurrentPosition(
-      showLocation,
-      (err) => {
-        // PERMISSION_DENIED (code 1)
-        if (err.code === 1) {
+    // 권한 상태 사전 확인 — denied면 즉시 가이드 표시 + 권한 변경 시 자동 재시도
+    if (navigator.permissions?.query) {
+      try {
+        const status = await navigator.permissions.query({ name: 'geolocation' });
+        if (status.state === 'denied') {
           setGpsState('error');
           setShowPermissionGuide(true);
           setTimeout(() => setGpsState('idle'), 300);
+
+          // 사용자가 OS/브라우저 설정에서 권한을 허용하면 자동 재시도
+          if (permissionListenerRef.current) {
+            permissionListenerRef.current.status.removeEventListener('change', permissionListenerRef.current.fn);
+          }
+          const fn = () => {
+            if (status.state !== 'denied') {
+              status.removeEventListener('change', fn);
+              permissionListenerRef.current = null;
+              setShowPermissionGuide(false);
+              performGeolocation();
+            }
+          };
+          status.addEventListener('change', fn);
+          permissionListenerRef.current = { status, fn };
           return;
         }
-        // TIMEOUT (code 3) 또는 POSITION_UNAVAILABLE (code 2) — 저정밀도로 재시도
-        if (err.code === 2 || err.code === 3) {
-          navigator.geolocation.getCurrentPosition(
-            showLocation,
-            (retryErr) => {
-              setGpsState('error');
-              if (retryErr.code === 1) {
-                setGpsError('위치 권한이 거부되었습니다.');
-              } else if (retryErr.code === 2) {
-                setGpsError('위치 서비스를 사용할 수 없습니다. 기기의 위치 서비스가 켜져 있는지 확인해 주세요.');
-              } else {
-                setGpsError('위치를 가져올 수 없습니다. 잠시 후 다시 시도해 주세요.');
-              }
-              setTimeout(() => { setGpsState('idle'); setGpsError(null); }, 5000);
-            },
-            { enableHighAccuracy: false, timeout: 15000, maximumAge: 300000 }
-          );
-          return;
-        }
-        // 기타 에러
-        setGpsState('error');
-        setGpsError('위치를 가져올 수 없습니다.');
-        setTimeout(() => { setGpsState('idle'); setGpsError(null); }, 4000);
-      },
-      { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 }
-    );
-  }, [showLocation]);
+      } catch {
+        // Permissions API 미지원/거부 — 정상 흐름으로 진행
+      }
+    }
+
+    performGeolocation();
+  }, [performGeolocation]);
+
+  // 언마운트 시 권한 변경 리스너 정리
+  useEffect(() => {
+    return () => {
+      if (permissionListenerRef.current) {
+        permissionListenerRef.current.status.removeEventListener('change', permissionListenerRef.current.fn);
+        permissionListenerRef.current = null;
+      }
+    };
+  }, []);
 
   // Web Worker로 도로·수종 단위 그룹화 (메인 스레드 차단 없음)
   const workerRef = useRef(null);
