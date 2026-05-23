@@ -78,25 +78,69 @@ export default function Map({ data, onStreetViewClick }) {
     setGpsState('active');
   }, []);
 
-  // IP 기반 대략 위치 fallback (GPS 완전 실패 시)
+  // IP 기반 대략 위치 fallback — 여러 제공자 병렬 호출 후 consensus 산출
   const tryIpFallback = useCallback(async () => {
-    try {
-      const res = await fetch('https://ipapi.co/json/');
-      if (!res.ok) throw new Error(`IP API ${res.status}`);
-      const data = await res.json();
-      const lat = Number(data.latitude);
-      const lng = Number(data.longitude);
-      if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
-        throw new Error('IP API: 좌표 없음');
+    const PROVIDERS = [
+      {
+        url: 'https://ipapi.co/json/',
+        parse: (d) => ({ lat: +d.latitude, lng: +d.longitude, city: d.city, region: d.region }),
+      },
+      {
+        url: 'https://ipwho.is/',
+        parse: (d) => (d.success === false ? null : { lat: +d.latitude, lng: +d.longitude, city: d.city, region: d.region }),
+      },
+      {
+        url: 'https://get.geojs.io/v1/ip/geo.json',
+        parse: (d) => ({ lat: +d.latitude, lng: +d.longitude, city: d.city, region: d.region }),
+      },
+    ];
+
+    const fetchOne = async (p) => {
+      const ctrl = AbortSignal.timeout ? AbortSignal.timeout(5000) : undefined;
+      const res = await fetch(p.url, { signal: ctrl });
+      if (!res.ok) throw new Error(`${res.status}`);
+      const r = p.parse(await res.json());
+      if (!r || !Number.isFinite(r.lat) || !Number.isFinite(r.lng)) throw new Error('invalid');
+      return r;
+    };
+
+    const distKm = (a, b) => {
+      const R = 6371;
+      const toRad = (d) => (d * Math.PI) / 180;
+      const dLat = toRad(b.lat - a.lat);
+      const dLng = toRad(b.lng - a.lng);
+      const x = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(dLng / 2) ** 2;
+      return 2 * R * Math.asin(Math.sqrt(x));
+    };
+
+    const results = (await Promise.allSettled(PROVIDERS.map(fetchOne)))
+      .filter((r) => r.status === 'fulfilled')
+      .map((r) => r.value);
+    if (results.length === 0) return false;
+
+    // consensus: 30km 이내로 모인 결과들의 centroid 사용
+    let best = null;
+    if (results.length >= 2) {
+      for (const anchor of results) {
+        const cluster = results.filter((r) => distKm(anchor, r) <= 30);
+        if (cluster.length >= 2 && (!best || cluster.length > best.cluster.length)) {
+          const avgLat = cluster.reduce((s, r) => s + r.lat, 0) / cluster.length;
+          const avgLng = cluster.reduce((s, r) => s + r.lng, 0) / cluster.length;
+          best = { cluster, lat: avgLat, lng: avgLng, city: cluster[0].city, region: cluster[0].region };
+        }
       }
-      placeLocationMarker(lat, lng, 5000, 11, true);
-      const place = [data.city, data.region].filter(Boolean).join(' ') || '대략 위치';
-      setGpsError(`GPS 측위 실패 → IP 기반 대략 위치(${place})를 표시합니다.`);
-      setTimeout(() => setGpsError(null), 6000);
-      return true;
-    } catch {
-      return false;
     }
+    if (!best) {
+      const single = results.find((r) => r.city) || results[0];
+      best = { cluster: [single], ...single };
+    }
+
+    placeLocationMarker(best.lat, best.lng, 5000, 11, true);
+    const place = [best.city, best.region].filter(Boolean).join(' ') || '대략 위치';
+    const sources = best.cluster.length > 1 ? `${best.cluster.length}개 소스 평균` : '단일 소스';
+    setGpsError(`GPS 측위 실패 → IP 기반 대략 위치(${place}, ${sources}). 정확한 위치는 지도를 길게 눌러 지정해 주세요.`);
+    setTimeout(() => setGpsError(null), 8000);
+    return true;
   }, [placeLocationMarker]);
 
   // GPS 현재 위치 — 위치 획득 성공 시 마커 표시 및 지도 이동
