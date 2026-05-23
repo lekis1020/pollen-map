@@ -41,7 +41,7 @@ export default function Map({ data, onStreetViewClick }) {
   const [showPermissionGuide, setShowPermissionGuide] = useState(false);
 
   // 위치 마커를 지도에 표시하는 공통 함수
-  const placeLocationMarker = useCallback((lat, lng, accuracy, zoomTo) => {
+  const placeLocationMarker = useCallback((lat, lng, accuracy, zoomTo, approximate = false) => {
     const map = mapInstanceRef.current;
     if (!map || !window.naver?.maps) return;
 
@@ -50,20 +50,24 @@ export default function Map({ data, onStreetViewClick }) {
     if (locationMarkerRef.current) locationMarkerRef.current.setMap(null);
     if (locationCircleRef.current) locationCircleRef.current.setMap(null);
 
+    const color = approximate ? '#E67E22' : '#4A90D9';
+    const radiusCap = approximate ? 8000 : 3000;
+
     if (accuracy > 0) {
       locationCircleRef.current = new window.naver.maps.Circle({
         map, center: latlng,
-        radius: Math.min(accuracy, 3000),
-        fillColor: '#4A90D9', fillOpacity: 0.1,
-        strokeColor: '#4A90D9', strokeOpacity: 0.25, strokeWeight: 1,
+        radius: Math.min(accuracy, radiusCap),
+        fillColor: color, fillOpacity: 0.1,
+        strokeColor: color, strokeOpacity: 0.25, strokeWeight: 1,
         clickable: false,
       });
     }
 
+    const markerClass = approximate ? 'gps-location-marker approximate' : 'gps-location-marker';
     locationMarkerRef.current = new window.naver.maps.Marker({
       position: latlng, map,
       icon: {
-        content: `<div class="gps-location-marker"><div class="gps-dot"></div><div class="gps-pulse"></div></div>`,
+        content: `<div class="${markerClass}"><div class="gps-dot"></div><div class="gps-pulse"></div></div>`,
         anchor: new window.naver.maps.Point(18, 18),
       },
       zIndex: 1000,
@@ -73,6 +77,27 @@ export default function Map({ data, onStreetViewClick }) {
     if (zoomTo) map.setZoom(zoomTo);
     setGpsState('active');
   }, []);
+
+  // IP 기반 대략 위치 fallback (GPS 완전 실패 시)
+  const tryIpFallback = useCallback(async () => {
+    try {
+      const res = await fetch('https://ipapi.co/json/');
+      if (!res.ok) throw new Error(`IP API ${res.status}`);
+      const data = await res.json();
+      const lat = Number(data.latitude);
+      const lng = Number(data.longitude);
+      if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+        throw new Error('IP API: 좌표 없음');
+      }
+      placeLocationMarker(lat, lng, 5000, 11, true);
+      const place = [data.city, data.region].filter(Boolean).join(' ') || '대략 위치';
+      setGpsError(`GPS 측위 실패 → IP 기반 대략 위치(${place})를 표시합니다.`);
+      setTimeout(() => setGpsError(null), 6000);
+      return true;
+    } catch {
+      return false;
+    }
+  }, [placeLocationMarker]);
 
   // GPS 현재 위치 — 위치 획득 성공 시 마커 표시 및 지도 이동
   const showLocation = useCallback((position) => {
@@ -107,31 +132,41 @@ export default function Map({ data, onStreetViewClick }) {
           // OS/네트워크 기반 측위가 느린 경우(특히 macOS CoreLocation cold-start) 저정밀도로 재시도
           navigator.geolocation.getCurrentPosition(
             showLocation,
-            (retryErr) => {
-              setGpsState('error');
+            async (retryErr) => {
               if (retryErr.code === 1) {
+                setGpsState('error');
                 setShowPermissionGuide(true);
                 setTimeout(() => setGpsState('idle'), 300);
                 return;
               }
-              if (retryErr.code === 2) {
-                setGpsError('위치 서비스를 사용할 수 없습니다. 기기의 위치 서비스가 켜져 있는지 확인해 주세요.');
-              } else {
-                setGpsError('위치 확인이 오래 걸립니다. 잠시 후 다시 시도해 주세요.');
+              // 두 번째 재시도도 실패 → IP 기반 대략 위치 fallback
+              const ok = await tryIpFallback();
+              if (!ok) {
+                setGpsState('error');
+                if (retryErr.code === 2) {
+                  setGpsError('위치 서비스를 사용할 수 없습니다. 기기의 위치 서비스가 켜져 있는지 확인해 주세요.');
+                } else {
+                  setGpsError('위치 확인이 오래 걸립니다. 잠시 후 다시 시도해 주세요.');
+                }
+                setTimeout(() => { setGpsState('idle'); setGpsError(null); }, 5000);
               }
-              setTimeout(() => { setGpsState('idle'); setGpsError(null); }, 5000);
             },
             { enableHighAccuracy: false, timeout: 25000, maximumAge: 0 }
           );
           return;
         }
-        setGpsState('error');
-        setGpsError('위치를 가져올 수 없습니다.');
-        setTimeout(() => { setGpsState('idle'); setGpsError(null); }, 4000);
+        // 기타 알 수 없는 코드 — IP fallback 시도 후 안내
+        tryIpFallback().then((ok) => {
+          if (!ok) {
+            setGpsState('error');
+            setGpsError('위치를 가져올 수 없습니다.');
+            setTimeout(() => { setGpsState('idle'); setGpsError(null); }, 4000);
+          }
+        });
       },
       { enableHighAccuracy: true, timeout: 12000, maximumAge: 60000 }
     );
-  }, [showLocation]);
+  }, [showLocation, tryIpFallback]);
 
   // GPS 현재 위치 기능
   const handleGpsClick = useCallback(async () => {

@@ -110,6 +110,17 @@
   100% { transform: scale(1.8); opacity: 0; }
 }
 
+/* IP 기반 대략 위치 — 주황색 + 펄스 없음(정확한 위치가 아니므로 시각적으로 구분) */
+.gps-location-marker.approximate .gps-dot {
+  background: #E67E22;
+}
+.gps-location-marker.approximate .gps-pulse {
+  background: rgba(230, 126, 34, 0.2);
+  animation: none;
+  transform: scale(1);
+  opacity: 0.6;
+}
+
 /* GPS 에러 토스트 */
 .gps-error-toast {
   position: absolute;
