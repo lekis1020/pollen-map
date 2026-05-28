@@ -1,5 +1,68 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import './StreetViewModal.css';
+
+const EARTH_RADIUS_M = 6371000;
+function haversineMeters(lat1, lng1, lat2, lng2) {
+  const toRad = (d) => (d * Math.PI) / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLng = toRad(lng2 - lng1);
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+  return 2 * EARTH_RADIUS_M * Math.asin(Math.sqrt(a));
+}
+
+const ICONS = {
+  check: (
+    <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+      <path d="M5 10.5l3.2 3.2L15.5 6.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  ),
+  alert: (
+    <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+      <path d="M10 6v4.5M10 13.5v.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx="10" cy="10" r="7.5" stroke="currentColor" strokeWidth="2" />
+    </svg>
+  ),
+  warning: (
+    <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+      <path d="M10 3.5L17 16H3L10 3.5z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+      <path d="M10 8.5v3M10 14v.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  ),
+  spinner: (
+    <svg viewBox="0 0 20 20" fill="none" aria-hidden="true" className="sv-icon-spin">
+      <path d="M10 2.5a7.5 7.5 0 017.5 7.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  ),
+  close: (
+    <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+      <path d="M5.5 5.5l9 9M14.5 5.5l-9 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  ),
+  external: (
+    <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+      <path d="M11.5 4.5h4v4M15 5l-7 7M9 4.5H5.5A1.5 1.5 0 004 6v8.5A1.5 1.5 0 005.5 16H14a1.5 1.5 0 001.5-1.5V11" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  ),
+  layer: (
+    <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+      <path d="M10 3l7 4-7 4-7-4 7-4zM3 13l7 4 7-4M3 10l7 4 7-4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  ),
+  tree: (
+    <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+      <path d="M10 2.5c2.8 0 5 2 5 4.6 0 1.2-.5 2.2-1.2 3 .8.7 1.2 1.6 1.2 2.7 0 2-2 3.5-4.5 3.5h-1c-2.5 0-4.5-1.5-4.5-3.5 0-1 .4-2 1.2-2.7C5.5 9.3 5 8.3 5 7.1 5 4.5 7.2 2.5 10 2.5z" fill="currentColor"/>
+      <path d="M10 15v2.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+    </svg>
+  ),
+  pin: (
+    <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+      <path d="M10 2.5c3 0 5.5 2.4 5.5 5.4 0 4-5.5 9.6-5.5 9.6S4.5 11.9 4.5 7.9C4.5 4.9 7 2.5 10 2.5z" fill="currentColor"/>
+      <circle cx="10" cy="7.8" r="2" fill="#fff"/>
+    </svg>
+  ),
+};
 
 export default function StreetViewModal({ treeData, onClose }) {
   const panoramaRef = useRef(null);
@@ -10,8 +73,8 @@ export default function StreetViewModal({ treeData, onClose }) {
   const [actualPosition, setActualPosition] = useState(null);
   const [distanceMeters, setDistanceMeters] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [mapType, setMapType] = useState('normal'); // 'normal' | 'hybrid'
 
-  // ESC 키로 닫기
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') onClose();
@@ -20,13 +83,13 @@ export default function StreetViewModal({ treeData, onClose }) {
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [onClose]);
 
-  // 모달 열린 동안 body 스크롤 방지
   useEffect(() => {
+    const prev = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
-    return () => { document.body.style.overflow = ''; };
+    return () => { document.body.style.overflow = prev; };
   }, []);
 
-  // 네이버 파노라마 초기화 - 시작/중간/끝 좌표를 순차 탐색
+  // 네이버 파노라마 초기화
   useEffect(() => {
     if (!containerRef.current) return;
 
@@ -74,13 +137,14 @@ export default function StreetViewModal({ treeData, onClose }) {
           try {
             const panoPos = panorama.getPosition();
             if (panoPos) {
-              setActualPosition({ lat: panoPos.lat(), lng: panoPos.lng() });
-              const treeCenter = new window.naver.maps.LatLng(midLat, midLng);
-              const dist = treeCenter.distanceTo(panoPos);
+              const panoLat = panoPos.lat();
+              const panoLng = panoPos.lng();
+              setActualPosition({ lat: panoLat, lng: panoLng });
+              const dist = haversineMeters(midLat, midLng, panoLat, panoLng);
               setDistanceMeters(Math.round(dist));
             }
           } catch {
-            // 위치 계산 실패 시에도 로드뷰 자체는 표시
+            /* keep panorama visible */
           }
           setLoading(false);
         });
@@ -98,7 +162,6 @@ export default function StreetViewModal({ treeData, onClose }) {
           if (status !== 'OK') onFail();
         });
 
-        // 3초 타임아웃 후 다음 후보로
         currentTimeout = setTimeout(onFail, 3000);
       } catch {
         candidateIndex++;
@@ -114,7 +177,7 @@ export default function StreetViewModal({ treeData, onClose }) {
     };
   }, [treeData]);
 
-  // 미니맵에 가로수 위치 + 로드뷰 위치 표시
+  // 미니맵
   useEffect(() => {
     if (!miniMapContainerRef.current || !window.naver?.maps) return;
     if (loading) return;
@@ -131,10 +194,12 @@ export default function StreetViewModal({ treeData, onClose }) {
       new nMaps.LatLng(Math.max(...allLats), Math.max(...allLngs))
     );
 
+    const initialMapType = error ? 'hybrid' : mapType;
+
     const map = new nMaps.Map(miniMapContainerRef.current, {
       center: bounds.getCenter(),
       zoom: 17,
-      mapTypeId: error ? nMaps.MapTypeId.HYBRID : nMaps.MapTypeId.NORMAL,
+      mapTypeId: initialMapType === 'hybrid' ? nMaps.MapTypeId.HYBRID : nMaps.MapTypeId.NORMAL,
       draggable: true,
       scrollWheel: true,
       zoomControl: true,
@@ -144,13 +209,13 @@ export default function StreetViewModal({ treeData, onClose }) {
       },
     });
     miniMapRef.current = map;
-    map.fitBounds(bounds, { top: 40, right: 40, bottom: 40, left: 40 });
+    map.fitBounds(bounds, { top: 36, right: 36, bottom: 36, left: 36 });
 
     new nMaps.Marker({
       position: treePos, map,
       icon: {
-        content: '<div style="width:14px;height:14px;background:#2ecc71;border:2.5px solid #fff;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,0.4)"></div>',
-        anchor: new nMaps.Point(9, 9),
+        content: '<div class="sv-mini-pin sv-mini-pin-tree" aria-label="가로수 위치"><span></span></div>',
+        anchor: new nMaps.Point(10, 10),
       },
       title: '가로수 위치',
     });
@@ -160,110 +225,209 @@ export default function StreetViewModal({ treeData, onClose }) {
       new nMaps.Marker({
         position: panoPos, map,
         icon: {
-          content: '<div style="width:12px;height:12px;background:#3498db;border:2px solid #fff;border-radius:50%;box-shadow:0 1px 4px rgba(0,0,0,0.3)"></div>',
-          anchor: new nMaps.Point(8, 8),
+          content: '<div class="sv-mini-pin sv-mini-pin-pano" aria-label="로드뷰 위치"><span></span></div>',
+          anchor: new nMaps.Point(9, 9),
         },
         title: '로드뷰 위치',
       });
 
       new nMaps.Polyline({
         map, path: [treePos, panoPos],
-        strokeColor: '#e74c3c', strokeOpacity: 0.6, strokeWeight: 2, strokeStyle: 'shortdash',
+        strokeColor: '#0F766E', strokeOpacity: 0.55, strokeWeight: 2, strokeStyle: 'shortdash',
       });
     }
 
     return () => { miniMapRef.current = null; };
-  }, [actualPosition, error, loading, treeData]);
+  }, [actualPosition, error, loading, treeData, mapType]);
 
   const handleBackdropClick = (e) => {
     if (e.target === e.currentTarget) onClose();
   };
 
-  // 검증 상태 판정
-  const getVerificationStatus = () => {
-    if (error) return { label: '로드뷰 미지원', color: '#e74c3c', icon: '!' };
-    if (distanceMeters === null) return { label: '확인 중', color: '#f39c12', icon: '...' };
-    if (distanceMeters < 50) return { label: '위치 일치', color: '#2ecc71', icon: 'O' };
-    if (distanceMeters < 200) return { label: '검증 필요', color: '#f39c12', icon: '?' };
-    return { label: '위치 불일치', color: '#e74c3c', icon: '!' };
+  const toggleMapType = useCallback(() => {
+    setMapType((t) => (t === 'normal' ? 'hybrid' : 'normal'));
+  }, []);
+
+  // 검증 상태
+  const getVerification = () => {
+    if (error) return { label: '로드뷰 미지원', tone: 'danger', icon: ICONS.alert };
+    if (loading || distanceMeters === null) return { label: '위치 확인 중', tone: 'pending', icon: ICONS.spinner };
+    if (distanceMeters < 50) return { label: '위치 일치', tone: 'success', icon: ICONS.check };
+    if (distanceMeters < 200) return { label: '검증 필요', tone: 'warning', icon: ICONS.warning };
+    return { label: '위치 불일치', tone: 'danger', icon: ICONS.alert };
   };
 
-  const getInfoBarContent = () => {
-    if (loading) return '로드뷰를 불러오는 중...';
-    if (error) {
-      return `반경 300m 내 로드뷰가 없습니다. 위성지도에서 가로수 위치를 확인하세요. (${treeData.latitude.toFixed(4)}, ${treeData.longitude.toFixed(4)})`;
+  const verification = getVerification();
+
+  const getInfoBar = () => {
+    if (loading) {
+      return { tone: 'pending', icon: ICONS.spinner, text: '로드뷰를 불러오는 중입니다…' };
     }
-    if (distanceMeters === null) return '로드뷰 위치를 확인하는 중...';
-    if (distanceMeters < 50) return `로드뷰가 가로수 위치와 일치합니다. (오차: ${distanceMeters}m)`;
-    return `로드뷰 촬영 위치가 가로수에서 약 ${distanceMeters.toLocaleString()}m 떨어져 있습니다. 미니맵에서 실제 위치를 확인하세요.`;
+    if (error) {
+      return {
+        tone: 'danger',
+        icon: ICONS.alert,
+        text: '반경 300m 내에 촬영된 로드뷰가 없습니다. 우측 위성지도에서 가로수 위치를 확인하세요.',
+      };
+    }
+    if (distanceMeters === null) {
+      return { tone: 'pending', icon: ICONS.spinner, text: '로드뷰 촬영 위치를 확인하는 중입니다…' };
+    }
+    if (distanceMeters < 50) {
+      return {
+        tone: 'success',
+        icon: ICONS.check,
+        text: `로드뷰가 가로수 위치와 일치합니다. (오차 ${distanceMeters}m)`,
+      };
+    }
+    return {
+      tone: 'warning',
+      icon: ICONS.warning,
+      text: `로드뷰 촬영 위치가 가로수에서 약 ${distanceMeters.toLocaleString()}m 떨어져 있습니다. 미니맵에서 실제 위치를 확인하세요.`,
+    };
   };
 
-  const verification = getVerificationStatus();
+  const infoBar = getInfoBar();
+  const naverMapUrl = `https://map.naver.com/p?c=${treeData.longitude},${treeData.latitude},18,0,0,0,dh`;
 
   return (
-    <div className="street-view-overlay" onClick={handleBackdropClick}>
-      <div className="street-view-modal">
-        <div className="street-view-header">
+    <div className="street-view-overlay" onClick={handleBackdropClick} role="presentation">
+      <div
+        className="street-view-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="sv-modal-title"
+      >
+        <header className="street-view-header">
           <div className="street-view-title">
-            <h3>
-              {treeData.roadName}
+            <div className="sv-title-row">
+              <h3 id="sv-modal-title">{treeData.roadName}</h3>
               <span
-                className="verification-badge"
-                style={{ background: verification.color }}
+                className={`sv-badge sv-badge--${verification.tone}`}
+                aria-label={`검증 상태: ${verification.label}`}
               >
+                <span className="sv-badge-icon" aria-hidden="true">{verification.icon}</span>
                 {verification.label}
               </span>
-            </h3>
-            <span className="street-view-location">
-              {treeData.city} {treeData.district} &middot; {treeData.species}
+            </div>
+            <div className="sv-meta-row">
+              <span className="sv-meta-chip">
+                <span className="sv-meta-label">지역</span>
+                <span className="sv-meta-value">{treeData.city} {treeData.district}</span>
+              </span>
+              <span className="sv-meta-divider" aria-hidden="true" />
+              <span className="sv-meta-chip">
+                <span className="sv-meta-label">수종</span>
+                <span className="sv-meta-value">{treeData.species}</span>
+              </span>
               {distanceMeters !== null && !error && (
-                <span className="street-view-distance"> &middot; {distanceMeters}m 오차</span>
+                <>
+                  <span className="sv-meta-divider" aria-hidden="true" />
+                  <span className="sv-meta-chip sv-meta-chip--accent">
+                    <span className="sv-meta-label">오차</span>
+                    <span className="sv-meta-value">{distanceMeters.toLocaleString()}m</span>
+                  </span>
+                </>
               )}
-            </span>
+            </div>
           </div>
-          <button className="street-view-close" onClick={onClose} aria-label="닫기">
-            &times;
+          <button
+            type="button"
+            className="street-view-close"
+            onClick={onClose}
+            aria-label="모달 닫기"
+          >
+            {ICONS.close}
           </button>
-        </div>
+        </header>
+
         <div className="street-view-content">
           {loading && (
-            <div className="street-view-loading street-view-loading-overlay">
-              <div className="street-view-spinner" />
-              <p>로드뷰를 불러오는 중...</p>
+            <div className="street-view-loading street-view-loading-overlay" role="status" aria-live="polite">
+              <div className="street-view-spinner" aria-hidden="true" />
+              <p className="sv-loading-title">로드뷰를 불러오는 중</p>
+              <p className="sv-loading-sub">네이버 파노라마 서버에 연결하고 있습니다.</p>
             </div>
           )}
+
           <div className="street-view-split">
-            <div className="street-view-panorama" ref={containerRef} style={error ? { display: 'none' } : undefined} />
+            <div
+              className="street-view-panorama"
+              ref={containerRef}
+              style={error ? { display: 'none' } : undefined}
+            />
+
             {error && (
-              <div className="street-view-fallback">
-                <div className="street-view-fallback-message">
-                  <p>이 위치의 로드뷰가 촬영되지 않았습니다.</p>
-                  <p className="street-view-fallback-hint">
-                    네이버 로드뷰는 주요 도로만 지원하며, 가로수 데이터의 좌표가 도로에서 벗어난 경우 표시되지 않을 수 있습니다.
+              <div className="street-view-fallback" role="status">
+                <div className="sv-fallback-card">
+                  <div className="sv-fallback-icon" aria-hidden="true">{ICONS.alert}</div>
+                  <h4>로드뷰가 제공되지 않는 위치입니다</h4>
+                  <p className="sv-fallback-desc">
+                    네이버 로드뷰는 주요 도로 위주로 촬영되어 있어, 가로수 좌표가 도로에서 벗어난 경우 표시되지 않을 수 있습니다.
                   </p>
-                  <div className="street-view-coords">
-                    좌표: {treeData.latitude.toFixed(4)}, {treeData.longitude.toFixed(4)}
+                  <dl className="sv-fallback-coords">
+                    <dt>좌표</dt>
+                    <dd>{treeData.latitude.toFixed(5)}, {treeData.longitude.toFixed(5)}</dd>
+                  </dl>
+                  <div className="sv-fallback-actions">
+                    <a
+                      className="sv-fallback-cta"
+                      href={naverMapUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <span>네이버 지도에서 열기</span>
+                      <span className="sv-cta-icon" aria-hidden="true">{ICONS.external}</span>
+                    </a>
+                    <button
+                      type="button"
+                      className="sv-fallback-secondary"
+                      onClick={() => {
+                        navigator.clipboard?.writeText(`${treeData.latitude}, ${treeData.longitude}`);
+                      }}
+                    >
+                      좌표 복사
+                    </button>
                   </div>
                 </div>
               </div>
             )}
-            <div className="street-view-minimap-wrapper">
+
+            <aside className="street-view-minimap-wrapper" aria-label="미니맵">
               <div className="street-view-minimap-header">
-                <span className="minimap-legend-item">
-                  <span className="minimap-dot minimap-dot-tree" />가로수
-                </span>
-                {!error && actualPosition && (
-                  <span className="minimap-legend-item">
-                    <span className="minimap-dot minimap-dot-pano" />로드뷰
+                <div className="sv-mini-legend">
+                  <span className="sv-mini-legend-item">
+                    <span className="sv-legend-dot sv-legend-dot-tree" aria-hidden="true" />
+                    가로수
                   </span>
+                  {!error && actualPosition && (
+                    <span className="sv-mini-legend-item">
+                      <span className="sv-legend-dot sv-legend-dot-pano" aria-hidden="true" />
+                      로드뷰 촬영점
+                    </span>
+                  )}
+                </div>
+                {!error && (
+                  <button
+                    type="button"
+                    className="sv-mini-toggle"
+                    onClick={toggleMapType}
+                    aria-pressed={mapType === 'hybrid'}
+                    title={mapType === 'hybrid' ? '일반 지도로 보기' : '위성 지도로 보기'}
+                  >
+                    <span className="sv-mini-toggle-icon" aria-hidden="true">{ICONS.layer}</span>
+                    {mapType === 'hybrid' ? '일반' : '위성'}
+                  </button>
                 )}
               </div>
               <div className="street-view-minimap" ref={miniMapContainerRef} />
-            </div>
+            </aside>
           </div>
         </div>
-        <div className="street-view-info-bar">
-          {getInfoBarContent()}
+
+        <div className={`street-view-info-bar sv-info-bar--${infoBar.tone}`} role="status" aria-live="polite">
+          <span className="sv-info-icon" aria-hidden="true">{infoBar.icon}</span>
+          <span className="sv-info-text">{infoBar.text}</span>
         </div>
       </div>
     </div>

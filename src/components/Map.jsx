@@ -298,7 +298,10 @@ export default function Map({ data, onStreetViewClick }) {
   }, [data]);
 
   useEffect(() => {
-    return () => workerRef.current?.terminate();
+    return () => {
+      workerRef.current?.terminate();
+      workerRef.current = null;
+    };
   }, []);
 
   // Info content for individual tree marker
@@ -326,7 +329,12 @@ export default function Map({ data, onStreetViewClick }) {
     }
 
     return `<div class="tree-popup">
-      <h3>${item.locationName || item.roadName}</h3>
+      <div class="tree-popup-header">
+        <div class="tree-popup-title">
+          <span class="tree-popup-eyebrow">개별 가로수</span>
+          <h3>${item.locationName || item.roadName}</h3>
+        </div>
+      </div>
       <table><tbody>${rows}</tbody></table>
       <button class="street-view-btn" id="naver-sv-btn">로드뷰 보기</button>
     </div>`;
@@ -348,7 +356,12 @@ export default function Map({ data, onStreetViewClick }) {
       <tr><td class="popup-label">주요 증상</td><td class="popup-symptoms">${allergenInfo.symptoms}</td></tr>`;
     }
     return `<div class="tree-popup">
-      <h3>${pl.roadName}</h3>
+      <div class="tree-popup-header">
+        <div class="tree-popup-title">
+          <span class="tree-popup-eyebrow">가로수길 구간</span>
+          <h3>${pl.roadName}</h3>
+        </div>
+      </div>
       <table><tbody>${rows}</tbody></table>
       <button class="street-view-btn" id="naver-sv-btn">대표지점 로드뷰</button>
     </div>`;
