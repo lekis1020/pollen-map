@@ -349,6 +349,11 @@ export default function StreetViewModal({ treeData, onClose }) {
                 </>
               )}
             </div>
+            <p className="sv-source-hint">
+              {treeData.institution
+                ? <>출처: {treeData.institution} · 도로명은 등록 원본 그대로 표시되며 일부 오기재가 있을 수 있습니다.</>
+                : '도로명은 공공데이터 원본 그대로 표시되며 일부 오기재가 있을 수 있습니다.'}
+            </p>
           </div>
           <button
             type="button"

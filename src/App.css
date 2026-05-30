@@ -272,6 +272,17 @@ html, body, #root {
   font-weight: 400 !important;
 }
 
+.popup-source-note {
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--tp-text-soft);
+  margin: 12px 0 0;
+  padding: 8px 10px;
+  background: var(--tp-surface-soft);
+  border-radius: var(--sv-radius-sm, 6px);
+  border-left: 3px solid #cbd5e1;
+}
+
 .allergen-badge {
   display: inline-flex;
   align-items: center;

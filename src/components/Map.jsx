@@ -328,6 +328,10 @@ export default function Map({ data, onStreetViewClick }) {
       <tr><td class="popup-label">주요 증상</td><td class="popup-symptoms">${allergenInfo.symptoms}</td></tr>`;
     }
 
+    const sourceNote = item.institution
+      ? `<p class="popup-source-note">출처: ${item.institution} · 도로명은 등록 원본 그대로 표시되며 일부 오기재가 있을 수 있습니다.</p>`
+      : '<p class="popup-source-note">도로명은 공공데이터 원본 그대로 표시되며 일부 오기재가 있을 수 있습니다.</p>';
+
     return `<div class="tree-popup">
       <div class="tree-popup-header">
         <div class="tree-popup-title">
@@ -336,6 +340,7 @@ export default function Map({ data, onStreetViewClick }) {
         </div>
       </div>
       <table><tbody>${rows}</tbody></table>
+      ${sourceNote}
       <button class="street-view-btn" id="naver-sv-btn">로드뷰 보기</button>
     </div>`;
   }, []);
@@ -355,6 +360,11 @@ export default function Map({ data, onStreetViewClick }) {
       <tr><td class="popup-label">꽃가루 시기</td><td>${getPollenSeasonText(allergenInfo.pollenMonths)}</td></tr>
       <tr><td class="popup-label">주요 증상</td><td class="popup-symptoms">${allergenInfo.symptoms}</td></tr>`;
     }
+    const inst = pl.representative?.institution;
+    const sourceNote = inst
+      ? `<p class="popup-source-note">출처: ${inst} · 도로명은 등록 원본 그대로 표시되며 일부 오기재가 있을 수 있습니다.</p>`
+      : '<p class="popup-source-note">도로명은 공공데이터 원본 그대로 표시되며 일부 오기재가 있을 수 있습니다.</p>';
+
     return `<div class="tree-popup">
       <div class="tree-popup-header">
         <div class="tree-popup-title">
@@ -363,6 +373,7 @@ export default function Map({ data, onStreetViewClick }) {
         </div>
       </div>
       <table><tbody>${rows}</tbody></table>
+      ${sourceNote}
       <button class="street-view-btn" id="naver-sv-btn">대표지점 로드뷰</button>
     </div>`;
   }, []);
