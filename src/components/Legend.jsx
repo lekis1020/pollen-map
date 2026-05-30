@@ -15,7 +15,7 @@ export default function Legend() {
           <span>{info.label}</span>
         </div>
       ))}
-      <h4 style={{ marginTop: 8 }}>데이터 소스</h4>
+      <h4>데이터 소스</h4>
       {SOURCE_LIST.map((source) => (
         <div key={source.id} className="legend-item">
           <span className="legend-color" style={{ background: source.color }} />
