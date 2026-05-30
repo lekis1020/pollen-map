@@ -106,7 +106,23 @@ export default function StreetViewModal({ treeData, onClose }) {
 
     const midLat = treeData.latitude;
     const midLng = treeData.longitude;
-    const candidates = [{ lat: midLat, lng: midLng, label: '중심점' }];
+    // 중심점 + 4방향 50m + 4방향 150m 오프셋으로 후보 확장.
+    // 도로/가로수 좌표가 약간 어긋난 경우 인근 로드뷰를 잡아낸다.
+    const lat50 = 50 / 111000;
+    const lng50 = 50 / (111000 * Math.cos((midLat * Math.PI) / 180));
+    const lat150 = lat50 * 3;
+    const lng150 = lng50 * 3;
+    const candidates = [
+      { lat: midLat, lng: midLng, label: '중심점' },
+      { lat: midLat + lat50, lng: midLng, label: '북 50m' },
+      { lat: midLat - lat50, lng: midLng, label: '남 50m' },
+      { lat: midLat, lng: midLng + lng50, label: '동 50m' },
+      { lat: midLat, lng: midLng - lng50, label: '서 50m' },
+      { lat: midLat + lat150, lng: midLng + lng150, label: '북동 150m' },
+      { lat: midLat - lat150, lng: midLng + lng150, label: '남동 150m' },
+      { lat: midLat + lat150, lng: midLng - lng150, label: '북서 150m' },
+      { lat: midLat - lat150, lng: midLng - lng150, label: '남서 150m' },
+    ];
 
     let candidateIndex = 0;
     let currentTimeout = null;
@@ -162,7 +178,8 @@ export default function StreetViewModal({ treeData, onClose }) {
           if (status !== 'OK') onFail();
         });
 
-        currentTimeout = setTimeout(onFail, 3000);
+        // 첫 후보는 3초, 이후는 1.2초씩 빠르게 진행 (총 ~13초 상한)
+        currentTimeout = setTimeout(onFail, candidateIndex === 0 ? 3000 : 1200);
       } catch {
         candidateIndex++;
         tryCandidate();
@@ -288,7 +305,9 @@ export default function StreetViewModal({ treeData, onClose }) {
   };
 
   const infoBar = getInfoBar();
-  const naverMapUrl = `https://map.naver.com/p?c=${treeData.longitude},${treeData.latitude},18,0,0,0,dh`;
+  // 줌 15는 도시 블록 전체가 보이는 수준이라, 좌표가 바다/산악이어도 주변 컨텍스트를 확인 가능
+  const naverMapUrl = `https://map.naver.com/p?c=${treeData.longitude},${treeData.latitude},15,0,0,0,dh`;
+  const naverSatelliteUrl = `https://map.naver.com/p?c=${treeData.longitude},${treeData.latitude},16,0,0,0,sw`;
 
   return (
     <div className="street-view-overlay" onClick={handleBackdropClick} role="presentation">
@@ -363,7 +382,8 @@ export default function StreetViewModal({ treeData, onClose }) {
                   <div className="sv-fallback-icon" aria-hidden="true">{ICONS.alert}</div>
                   <h4>로드뷰가 제공되지 않는 위치입니다</h4>
                   <p className="sv-fallback-desc">
-                    네이버 로드뷰는 주요 도로 위주로 촬영되어 있어, 가로수 좌표가 도로에서 벗어난 경우 표시되지 않을 수 있습니다.
+                    중심점 + 주변 8방향 후보(약 50–150m)를 모두 시도했지만 촬영된 로드뷰를 찾지 못했습니다.
+                    좌표가 <strong>도로에서 벗어났거나 해상·산악·국경 지역</strong>일 가능성이 있습니다.
                   </p>
                   <dl className="sv-fallback-coords">
                     <dt>좌표</dt>
@@ -372,12 +392,20 @@ export default function StreetViewModal({ treeData, onClose }) {
                   <div className="sv-fallback-actions">
                     <a
                       className="sv-fallback-cta"
+                      href={naverSatelliteUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <span>위성지도에서 확인</span>
+                      <span className="sv-cta-icon" aria-hidden="true">{ICONS.external}</span>
+                    </a>
+                    <a
+                      className="sv-fallback-secondary"
                       href={naverMapUrl}
                       target="_blank"
                       rel="noopener noreferrer"
                     >
-                      <span>네이버 지도에서 열기</span>
-                      <span className="sv-cta-icon" aria-hidden="true">{ICONS.external}</span>
+                      일반 지도
                     </a>
                     <button
                       type="button"

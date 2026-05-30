@@ -394,16 +394,21 @@
 
 .sv-fallback-secondary {
   appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   padding: 10px 16px;
   background: var(--sv-bg);
   color: var(--sv-text);
   font-size: 13px;
   font-weight: 600;
+  text-decoration: none;
   border: 1px solid var(--sv-border-strong);
   border-radius: var(--sv-radius-md);
   cursor: pointer;
   transition: background 160ms var(--sv-ease), border-color 160ms var(--sv-ease);
   min-height: 44px;
+  box-sizing: border-box;
 }
 
 .sv-fallback-secondary:hover {
