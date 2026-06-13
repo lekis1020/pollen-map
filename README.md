@@ -1,11 +1,19 @@
 # 🌳 가로수길 알레르기 지도 (pollen-map)
 
+**한국어** · [English](README.en.md)
+
 전국 가로수 분포와 **알레르기 유발 수종**을 지도 위에 시각화하는 웹 서비스입니다.
 식물 알레르기 환자와 의료진이 주변 가로수의 수종·알레르기 등급·꽃가루 시기를 한눈에 확인하고, 로드뷰로 실제 위치를 살펴볼 수 있습니다.
 
 **🔗 배포:** https://pollen-map-dun.vercel.app
 
 ---
+
+## 📸 미리보기
+
+| 전국 가로수 지도 | 마커 팝업 (알레르기 정보) | 로드뷰 연동 |
+|:---:|:---:|:---:|
+| ![전국 가로수 지도](docs/screenshots/overview.png) | ![마커 팝업](docs/screenshots/marker-popup.png) | ![로드뷰](docs/screenshots/roadview.png) |
 
 ## ✨ 주요 기능
 
