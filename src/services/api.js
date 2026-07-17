@@ -138,6 +138,15 @@ export async function loadSeoulTrees() {
   return items;
 }
 
+// 산림청 국유림 명품숲 정적 JSON 로드. 좌표는 배포 전 Naver Cloud Geocoding API로 보강한다.
+export async function loadFamousForests() {
+  const res = await fetch('/data/famous-forests.json');
+  if (!res.ok) throw new Error(`명품숲 데이터 로드 실패: ${res.status}`);
+  const data = await res.json();
+  const normalize = NORMALIZERS.famousForest;
+  return (data.items || []).filter((item) => item.hasCoords).map(normalize);
+}
+
 // 2단계 로드: 첫 페이지 즉시 반환 → 나머지 완료 후 콜백
 export async function fetchAllData(onFirstPage) {
   const apiKey = getApiKey();

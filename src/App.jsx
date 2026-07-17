@@ -3,7 +3,7 @@ import Map from './components/Map';
 import StreetViewModal from './components/StreetViewModal';
 import FilterPanel from './components/FilterPanel';
 import StatsPanel from './components/StatsPanel';
-import { fetchAllData, loadSeoulTrees } from './services/api';
+import { fetchAllData, loadFamousForests, loadSeoulTrees } from './services/api';
 import { getCachedData, setCachedData } from './services/cache';
 import { filterData, getUniqueCities, getUniqueSpecies, calculateStats } from './utils/helpers';
 import './App.css';
@@ -11,6 +11,7 @@ import './App.css';
 function App() {
   const [nationwideData, setNationwideData] = useState([]);
   const [seoulData, setSeoulData] = useState([]);
+  const [famousForestData, setFamousForestData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadingStage, setLoadingStage] = useState(''); // nationwide | seoul | processing
   const [error, setError] = useState(null);
@@ -77,12 +78,22 @@ function App() {
     return () => { cancelled = true; };
   }, []);
 
+  // 산림청 국유림 명품숲: 지오코딩된 정적 데이터를 백그라운드 로드
+  useEffect(() => {
+    let cancelled = false;
+    loadFamousForests()
+      .then((forests) => { if (!cancelled) setFamousForestData(forests); })
+      .catch((err) => console.warn('명품숲 로드 실패:', err.message));
+    return () => { cancelled = true; };
+  }, []);
+
   // 전국 + 서울 병합: 서울은 개별 그루 데이터로 전국 소스 서울 부분을 대체
   const rawData = useMemo(() => {
-    if (seoulData.length === 0) return nationwideData;
-    const nonSeoul = nationwideData.filter((it) => it.city !== '서울특별시');
-    return [...nonSeoul, ...seoulData];
-  }, [nationwideData, seoulData]);
+    const baseData = seoulData.length === 0
+      ? nationwideData
+      : [...nationwideData.filter((it) => it.city !== '서울특별시'), ...seoulData];
+    return [...baseData, ...famousForestData];
+  }, [nationwideData, seoulData, famousForestData]);
 
   // 필터 옵션
   const cities = useMemo(() => getUniqueCities(rawData), [rawData]);

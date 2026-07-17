@@ -345,6 +345,41 @@ export default function Map({ data, onStreetViewClick }) {
     </div>`;
   }, []);
 
+  const buildFamousForestInfo = useCallback((item) => {
+    const level = getAllergenLevel(item.species);
+    const levelInfo = ALLERGEN_LEVELS[level];
+    const allergenInfo = getAllergenInfo(item.species);
+    let rows = `
+      <tr><td class="popup-label">주소</td><td>${item.address || '-'}</td></tr>
+      <tr><td class="popup-label">주요 수종</td><td><strong>${item.species || '-'}</strong></td></tr>
+      <tr><td class="popup-label">면적</td><td>${item.areaHa ? `${item.areaHa.toLocaleString()} ha` : '-'}</td></tr>
+      <tr><td class="popup-label">유형·선정</td><td>${item.type || '-'}${item.year ? ` · ${item.year}` : ''}</td></tr>
+      <tr><td class="popup-label">알레르기 등급</td><td><span class="allergen-badge" style="background:${levelInfo.color}">${levelInfo.label}</span></td></tr>`;
+    if (allergenInfo) {
+      rows += `
+      <tr><td class="popup-label">꽃가루 시기</td><td>${getPollenSeasonText(allergenInfo.pollenMonths)}</td></tr>`;
+    }
+    if (item.management) {
+      rows += `
+      <tr><td class="popup-label">관리기관</td><td>${item.management}</td></tr>`;
+    }
+    if (item.note) {
+      rows += `
+      <tr><td class="popup-label">특이사항</td><td>${item.note}</td></tr>`;
+    }
+
+    return `<div class="tree-popup">
+      <div class="tree-popup-header">
+        <div class="tree-popup-title">
+          <span class="tree-popup-eyebrow">국유림 명품숲</span>
+          <h3>${item.locationName}</h3>
+        </div>
+      </div>
+      <table><tbody>${rows}</tbody></table>
+      <p class="popup-source-note">출처: 산림청 국유림 명품숲 선정 현황(15038042) · 좌표는 Naver Cloud Geocoding 대표지점입니다.</p>
+    </div>`;
+  }, []);
+
   // Info content for polyline (group)
   const buildPolylineInfo = useCallback((pl) => {
     const level = getAllergenLevel(pl.species);
@@ -515,21 +550,24 @@ export default function Map({ data, onStreetViewClick }) {
     const markers = visibleMarkers.map((item) => {
       const level = getAllergenLevel(item.species);
       const color = ALLERGEN_LEVELS[level]?.color || '#3498db';
+      const isFamousForest = item.sourceType === 'famousForest';
       const marker = new window.naver.maps.Marker({
         position: new window.naver.maps.LatLng(item.latitude, item.longitude),
         map: null,
         icon: {
-          content: `<div style="width:12px;height:12px;background:${color};border:2px solid #fff;border-radius:50%;box-shadow:0 1px 3px rgba(0,0,0,0.3);cursor:pointer"></div>`,
-          anchor: new window.naver.maps.Point(8, 8),
+          content: isFamousForest
+            ? '<div style="width:22px;height:22px;display:flex;align-items:center;justify-content:center;background:#8e44ad;border:2px solid #fff;border-radius:50%;box-shadow:0 1px 3px rgba(0,0,0,0.35);cursor:pointer;font-size:13px">♣</div>'
+            : `<div style="width:12px;height:12px;background:${color};border:2px solid #fff;border-radius:50%;box-shadow:0 1px 3px rgba(0,0,0,0.3);cursor:pointer"></div>`,
+          anchor: new window.naver.maps.Point(isFamousForest ? 12 : 8, isFamousForest ? 12 : 8),
         },
-        title: item.roadName || item.locationName,
+        title: item.locationName || item.roadName,
       });
       window.naver.maps.Event.addListener(marker, 'click', () => {
         if (infoWindowRef.current) {
           try { infoWindowRef.current.close(); } catch {}
         }
         const infoWindow = new window.naver.maps.InfoWindow({
-          content: buildMarkerInfo(item),
+          content: isFamousForest ? buildFamousForestInfo(item) : buildMarkerInfo(item),
           borderWidth: 0,
           backgroundColor: 'transparent',
           anchorSize: new window.naver.maps.Size(0, 0),
@@ -537,7 +575,7 @@ export default function Map({ data, onStreetViewClick }) {
         });
         infoWindow.open(map, marker);
         infoWindowRef.current = infoWindow;
-        setTimeout(() => {
+        if (!isFamousForest) setTimeout(() => {
           const btn = document.getElementById('naver-sv-btn');
           if (btn && onStreetViewClick) {
             btn.addEventListener('click', () => onStreetViewClick(item));
@@ -593,7 +631,7 @@ export default function Map({ data, onStreetViewClick }) {
         clusterRef.current = null;
       }
     };
-  }, [grouped, bounds, onStreetViewClick, buildMarkerInfo, buildPolylineInfo, mapReady]);
+  }, [grouped, bounds, onStreetViewClick, buildMarkerInfo, buildFamousForestInfo, buildPolylineInfo, mapReady]);
 
   return (
     <div className="map-wrapper">

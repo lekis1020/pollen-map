@@ -19,6 +19,14 @@ export const DATA_SOURCES = {
     icon: 'circle',
     enabled: false, // 공공데이터 API가 아닌 정적 JSON으로 로드하므로 fetchAllData 루프에서 제외
   },
+  famousForest: {
+    id: 'famousForest',
+    label: '국유림 명품숲',
+    description: '산림청_국유림 명품숲 선정 현황 (15038042)',
+    color: '#8e44ad',
+    icon: 'tree',
+    enabled: false, // 정적 JSON으로 loadFamousForests에서 로드
+  },
 };
 
 export const SOURCE_LIST = Object.values(DATA_SOURCES);

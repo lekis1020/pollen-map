@@ -7,6 +7,8 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
+    "data:forests": "node scripts/fetch-famous-forests.mjs",
+    "geocode:forests": "node scripts/geocode-famous-forests.mjs",
     "preview": "vite preview"
   },
   "dependencies": {
