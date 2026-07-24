@@ -1,4 +1,6 @@
-const CACHE_KEY = 'pollen-map-data';
+// v2: 정규화 결과에 speciesList/speciesKind/qualityFlags가 추가되어
+// 이전 캐시는 쓸 수 없다.
+const CACHE_KEY = 'pollen-map-data-v2';
 const CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
 
 export function getCachedData() {

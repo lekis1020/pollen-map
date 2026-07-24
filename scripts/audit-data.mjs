@@ -11,6 +11,7 @@ import { fileURLToPath } from 'node:url';
 
 import { FLAG, flagNationwideRecord, flagSeoulTree } from '../src/utils/qualityFlags.js';
 import { repairCoordinate, isInKorea } from '../src/utils/coordRepair.js';
+import { nationwideKey } from '../src/services/normalizers.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '..');
@@ -55,16 +56,6 @@ async function fetchNationwide() {
     Array.from({ length: Math.max(0, pages - 1) }, (_, i) => fetchPage(i + 2))
   );
   return [first, ...rest].flatMap((body) => body.items || []);
-}
-
-// 전국 소스에는 안정적인 레코드 id가 없다. 기관+도로명+시작좌표로 키를 만든다.
-function nationwideKey(item) {
-  return [
-    item.institutionNm || item.insttNm || '',
-    item.sttreeStretNm || '',
-    item.startLatitude || '',
-    item.startLongitude || '',
-  ].join('|');
 }
 
 function auditNationwide(items) {
