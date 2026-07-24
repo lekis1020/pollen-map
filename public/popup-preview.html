@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tree Popup Preview</title>
+  <link rel="stylesheet" href="/src/App.css" />
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 40px 20px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+      background:
+        linear-gradient(135deg, rgba(15, 118, 110, 0.06), rgba(2, 132, 199, 0.05)),
+        repeating-linear-gradient(45deg, #f5f6f8 0, #f5f6f8 12px, #eef0f3 12px, #eef0f3 24px);
+      min-height: 100vh;
+      color: #0f172a;
+    }
+    h1 {
+      text-align: center;
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      margin: 0 0 6px;
+    }
+    .sub {
+      text-align: center;
+      color: #64748b;
+      font-size: 13px;
+      margin: 0 0 32px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 32px;
+      max-width: 1200px;
+      margin: 0 auto;
+      align-items: start;
+      justify-items: center;
+    }
+    @media (max-width: 980px) { .grid { grid-template-columns: 1fr; } }
+
+    .variant {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+    .variant-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: #475569;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    /* Naver는 InfoWindow를 backgroundColor:'transparent'로 띄우므로 .tree-popup이 배경/꼬리를 가짐 */
+    .iw-shell { display: contents; }
+
+    .anchor-dot {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #e74c3c;
+      border: 2px solid #fff;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+      margin-top: -2px;
+    }
+  </style>
+</head>
+<body>
+  <h1>가로수 정보 팝업 (.tree-popup)</h1>
+  <p class="sub">지도의 마커/구간을 클릭했을 때 네이버 InfoWindow에 렌더링되는 콘텐츠 — 리뉴얼 후</p>
+
+  <div class="grid">
+    <!-- 1) 개별 마커 - 매우 높음 -->
+    <div class="variant">
+      <div class="variant-label">개별 가로수 · 매우 높음</div>
+      <div class="iw-shell">
+        <div class="tree-popup">
+          <div class="tree-popup-header">
+            <div class="tree-popup-title">
+              <span class="tree-popup-eyebrow">개별 가로수</span>
+              <h3>삼성로</h3>
+            </div>
+          </div>
+          <table>
+            <tbody>
+              <tr><td class="popup-label">지역</td><td>서울특별시 강남구</td></tr>
+              <tr><td class="popup-label">수종</td><td><strong>은행나무</strong></td></tr>
+              <tr><td class="popup-label">식재본수</td><td>320본</td></tr>
+              <tr><td class="popup-label">알레르기 등급</td><td><span class="allergen-badge" style="background:#dc2626">매우 높음</span></td></tr>
+              <tr><td class="popup-label">꽃가루 시기</td><td>4월 ~ 5월</td></tr>
+              <tr><td class="popup-label">주요 증상</td><td class="popup-symptoms">코막힘, 재채기, 결막염, 호흡곤란</td></tr>
+            </tbody>
+          </table>
+          <p class="popup-source-note">출처: 서울특별시 강남구 푸른도시과 · 도로명은 등록 원본 그대로 표시되며 일부 오기재가 있을 수 있습니다.</p>
+          <button class="street-view-btn">로드뷰 보기</button>
+        </div>
+      </div>
+      <div class="anchor-dot" style="background:#dc2626"></div>
+    </div>
+
+    <!-- 2) 폴리라인 구간 - 높음 -->
+    <div class="variant">
+      <div class="variant-label">가로수길 구간 · 높음</div>
+      <div class="iw-shell">
+        <div class="tree-popup">
+          <div class="tree-popup-header">
+            <div class="tree-popup-title">
+              <span class="tree-popup-eyebrow">가로수길 구간</span>
+              <h3>학동로</h3>
+            </div>
+          </div>
+          <table>
+            <tbody>
+              <tr><td class="popup-label">지역</td><td>서울특별시 강남구</td></tr>
+              <tr><td class="popup-label">수종</td><td><strong>양버즘나무</strong></td></tr>
+              <tr><td class="popup-label">구간 그루수</td><td>184본</td></tr>
+              <tr><td class="popup-label">알레르기 등급</td><td><span class="allergen-badge" style="background:#ea580c">높음</span></td></tr>
+              <tr><td class="popup-label">꽃가루 시기</td><td>4월 ~ 5월</td></tr>
+              <tr><td class="popup-label">주요 증상</td><td class="popup-symptoms">눈 가려움, 콧물, 천식 악화</td></tr>
+            </tbody>
+          </table>
+          <button class="street-view-btn">대표지점 로드뷰</button>
+        </div>
+      </div>
+      <div class="anchor-dot" style="background:#ea580c"></div>
+    </div>
+
+    <!-- 3) 개별 마커 - 해당 없음 -->
+    <div class="variant">
+      <div class="variant-label">개별 가로수 · 해당 없음</div>
+      <div class="iw-shell">
+        <div class="tree-popup">
+          <div class="tree-popup-header">
+            <div class="tree-popup-title">
+              <span class="tree-popup-eyebrow">개별 가로수</span>
+              <h3>샘골길</h3>
+            </div>
+          </div>
+          <table>
+            <tbody>
+              <tr><td class="popup-label">지역</td><td>충청북도 충주시</td></tr>
+              <tr><td class="popup-label">수종</td><td><strong>왕벚나무</strong></td></tr>
+              <tr><td class="popup-label">식재본수</td><td>32본</td></tr>
+              <tr><td class="popup-label">알레르기 등급</td><td><span class="allergen-badge" style="background:#64748b">해당없음</span></td></tr>
+            </tbody>
+          </table>
+          <button class="street-view-btn">로드뷰 보기</button>
+        </div>
+      </div>
+      <div class="anchor-dot" style="background:#64748b"></div>
+    </div>
+  </div>
+</body>
+</html>

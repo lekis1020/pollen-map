@@ -132,7 +132,8 @@ export const ALLERGEN_DATABASE = [
     level: 3,
     pollenMonths: [4, 5, 6],
     symptoms: '비염, 결막염 (꽃가루량이 매우 많음)',
-    keywords: ['소나무', '잣나무', '리기다소나무', '해송', '곰솔', '적송', '흑송'],
+    // 반송(Pinus densiflora f. multicaulis)은 소나무의 품종이라 같은 종이다.
+    keywords: ['소나무', '잣나무', '리기다소나무', '해송', '곰솔', '적송', '흑송', '반송'],
   },
   {
     name: '느릅나무',
