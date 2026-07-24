@@ -19,6 +19,13 @@ export function filterData(data, filters) {
     // 유효한 좌표가 있는 데이터만
     if (!item.latitude || !item.longitude) return false;
 
+    // 원본에 결주·고사로 기재된 항목은 나무가 아니므로 지도에 표시하지 않는다.
+    if (item.speciesKind === 'not-a-tree') return false;
+
+    // 품질 이슈가 있는 기록 숨기기. 기본값은 표시(off)다 —
+    // 기본으로 숨기면 사용자가 데이터가 왜 적은지 알 수 없다.
+    if (filters.hideFlagged && item.qualityFlags?.length) return false;
+
     // 지역 필터
     if (filters.city && item.city !== filters.city) return false;
 
@@ -46,8 +53,14 @@ export function calculateStats(data) {
   const speciesMap = {};
   const levelCounts = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0 };
   const sourceCounts = {};
+  let excludedNotATree = 0;
 
   for (const item of data) {
+    // 결주·고사는 나무가 아니므로 통계에서도 뺀다.
+    if (item.speciesKind === 'not-a-tree') {
+      excludedNotATree += 1;
+      continue;
+    }
     const species = item.species || '미확인';
     if (!speciesMap[species]) {
       speciesMap[species] = { count: 0, treeCount: 0 };
@@ -86,5 +99,11 @@ export function calculateStats(data) {
     count,
   }));
 
-  return { speciesStats, levelStats, sourceStats, total: data.length };
+  return {
+    speciesStats,
+    levelStats,
+    sourceStats,
+    total: data.length - excludedNotATree,
+    excludedNotATree,
+  };
 }
