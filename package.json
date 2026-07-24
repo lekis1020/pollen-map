@@ -11,6 +11,7 @@
     "test:watch": "vitest",
     "data:forests": "node scripts/fetch-famous-forests.mjs",
     "geocode:forests": "node scripts/geocode-famous-forests.mjs",
+    "audit:data": "node scripts/audit-data.mjs",
     "preview": "vite preview"
   },
   "dependencies": {

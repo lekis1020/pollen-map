@@ -1,0 +1,75 @@
+{
+  "generatedAt": "2026-07-24T03:28:21.070Z",
+  "corrections": [
+    {
+      "sourceType": "streetTree",
+      "key": "부산광역시 동래구청|금강로59번길|35.214684|120.076932",
+      "match": {
+        "institutionNm": "부산광역시 동래구청",
+        "sttreeStretNm": "금강로59번길"
+      },
+      "field": "startLongitude",
+      "from": "120.076932",
+      "to": "129.076932",
+      "method": "single-digit-repair",
+      "confidence": "high",
+      "evidence": "정상 끝점에서 0.20km. 한 자리 치환 후보 중 국내로 들어오는 것이 유일"
+    },
+    {
+      "sourceType": "streetTree",
+      "key": "충청북도 옥천군|가화길|36.307305|127.561457",
+      "match": {
+        "institutionNm": "충청북도 옥천군",
+        "sttreeStretNm": "가화길"
+      },
+      "field": "endLatitude",
+      "from": "26.305441",
+      "to": "36.305441",
+      "method": "single-digit-repair",
+      "confidence": "high",
+      "evidence": "정상 끝점에서 0.22km. 한 자리 치환 후보 중 국내로 들어오는 것이 유일"
+    },
+    {
+      "sourceType": "streetTree",
+      "key": "경상북도 상주시|상주보~상하수도사업소|36.435432|128.246033",
+      "match": {
+        "institutionNm": "경상북도 상주시",
+        "sttreeStretNm": "상주보~상하수도사업소"
+      },
+      "field": "endLongitude",
+      "from": "158.239748",
+      "to": "128.239748",
+      "method": "single-digit-repair",
+      "confidence": "high",
+      "evidence": "정상 끝점에서 0.57km. 한 자리 치환 후보 중 국내로 들어오는 것이 유일"
+    },
+    {
+      "sourceType": "streetTree",
+      "key": "충청북도 충주시|충주산단2로|39.012237|127.932686",
+      "match": {
+        "institutionNm": "충청북도 충주시",
+        "sttreeStretNm": "충주산단2로"
+      },
+      "field": "startLatitude",
+      "from": "39.012237",
+      "to": "37.012237",
+      "method": "single-digit-repair",
+      "confidence": "high",
+      "evidence": "정상 끝점에서 1.95km. 한 자리 치환 후보 중 국내로 들어오는 것이 유일"
+    },
+    {
+      "sourceType": "streetTree",
+      "key": "광주광역시 북구청|북부순환도로|32.2148246|126.9025092",
+      "match": {
+        "institutionNm": "광주광역시 북구청",
+        "sttreeStretNm": "북부순환도로"
+      },
+      "field": "startLatitude",
+      "from": "32.2148246",
+      "to": "35.2148246",
+      "method": "single-digit-repair",
+      "confidence": "high",
+      "evidence": "정상 끝점에서 3.20km. 한 자리 치환 후보 중 국내로 들어오는 것이 유일"
+    }
+  ]
+}
