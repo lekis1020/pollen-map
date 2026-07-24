@@ -1,12 +1,19 @@
 // 수종별 알레르기 항원 정보 데이터베이스
-// 등급: 4(매우높음), 3(높음), 2(보통), 1(낮음), 0(없음/미확인)
+// 등급: 4(매우높음), 3(높음), 2(보통), 1(낮음), 0(정보 없음)
+//
+// 0은 "알레르기 유발 안 함"이 아니라 "DB에 등재되지 않아 판정 불가"다.
+// DB 항목 중 level 0인 것은 하나도 없으며, 0은 오직 미매칭을 뜻한다.
+
+// Node ESM은 확장자 없는 import를 해석하지 못한다.
+// scripts/audit-data.mjs 가 plain Node로 이 모듈을 불러오므로 .js를 명시한다.
+import { canonicalizeSpecies } from './speciesCanonical.js';
 
 export const ALLERGEN_LEVELS = {
   4: { label: '매우 높음', color: '#e74c3c', description: '심한 알레르기 반응 유발 가능' },
   3: { label: '높음', color: '#e67e22', description: '알레르기 반응 유발 가능성 높음' },
   2: { label: '보통', color: '#f39c12', description: '일부 민감한 사람에게 영향' },
   1: { label: '낮음', color: '#2ecc71', description: '알레르기 유발 가능성 낮음' },
-  0: { label: '해당없음', color: '#3498db', description: '알레르기 항원 미확인' },
+  0: { label: '정보 없음', color: '#475569', description: 'DB에 등재되지 않은 수종입니다' },
 };
 
 // 수종별 알레르기 정보
@@ -324,24 +331,67 @@ export const ALLERGEN_DATABASE = [
   },
 ];
 
-// 수종명으로 알레르기 정보를 조회
-export function getAllergenInfo(speciesName) {
-  if (!speciesName) return null;
-  const normalized = speciesName.trim();
+// 별칭 → DB 항목 정확 매칭 인덱스.
+// name·keywords를 모두 키로 넣는다. 최초 등록이 이긴다(DB는 등급 내림차순 정렬).
+const EXACT_INDEX = (() => {
+  const map = new Map();
   for (const entry of ALLERGEN_DATABASE) {
-    for (const keyword of entry.keywords) {
-      if (normalized.includes(keyword)) {
-        return entry;
+    for (const key of [entry.name, ...entry.keywords]) {
+      if (!map.has(key)) map.set(key, entry);
+    }
+  }
+  return map;
+})();
+
+// 단일 수종명에 대해 3단계로 매칭한다.
+//   1. 정규화 후 정확 매칭 (exact)   — 축약형·오타를 흡수한다
+//   2. 기존 부분일치 폴백 (inferred) — 대왕참나무→참나무 같은 케이스 보존
+//   3. 미매칭 (none)
+//
+// 부분일치를 없애면 안 된다. 현재 부분일치로 정상 동작하는 라벨이 1,646개다.
+// 진짜 결함은 부분일치 자체가 아니라 방향이었다 — 라벨.includes(키워드)만 봐서
+// 라벨이 키워드보다 짧은 축약형('양버즘' vs '양버즘나무')이 전부 탈락했다.
+export function getAllergenMatch(speciesName) {
+  if (!speciesName) return { info: null, matchType: 'none' };
+
+  const { species } = canonicalizeSpecies(speciesName);
+  const candidates = species.length > 0 ? species : [String(speciesName).trim()];
+
+  for (const name of candidates) {
+    const hit = EXACT_INDEX.get(name);
+    if (hit) return { info: hit, matchType: 'exact' };
+  }
+
+  for (const name of candidates) {
+    for (const entry of ALLERGEN_DATABASE) {
+      for (const keyword of entry.keywords) {
+        if (name.includes(keyword)) return { info: entry, matchType: 'inferred' };
       }
     }
   }
-  return null;
+
+  return { info: null, matchType: 'none' };
 }
 
-// 알레르기 등급 반환 (매칭 안 되면 0)
+// 수종명으로 알레르기 정보를 조회 (기존 시그니처 유지)
+export function getAllergenInfo(speciesName) {
+  return getAllergenMatch(speciesName).info;
+}
+
+// 알레르기 등급 반환 (매칭 안 되면 0 = 정보 없음)
 export function getAllergenLevel(speciesName) {
   const info = getAllergenInfo(speciesName);
   return info ? info.level : 0;
+}
+
+// 복수 수종에 대해 각각의 정보를 반환한다.
+// "은행나무+이팝나무"처럼 한 칸에 여러 종이 적힌 경우 두 번째 이후 종의
+// 꽃가루 시기·증상이 소실되던 문제를 막는다.
+export function getAllergenInfos(speciesList) {
+  return (speciesList || []).map((species) => ({
+    species,
+    ...getAllergenMatch(species),
+  }));
 }
 
 // 꽃가루 시기를 한글 문자열로 변환

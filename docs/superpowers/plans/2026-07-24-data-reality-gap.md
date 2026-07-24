@@ -20,6 +20,15 @@
 - 디자인 토큰은 기존 healthcare-clean을 재사용한다. 새 색·다크모드·글래스모피즘을 도입하지 않는다. 액센트 `#0f766e`, warning `#b45309`, pending `#475569`, danger `#b91c1c`.
 - 아이콘은 인라인 SVG만 쓴다. emoji 금지.
 - 파일은 ESM(`import`/`export`). `package.json`에 `"type": "module"`이 이미 있다.
+- **`src/` 안에서 서로 import할 때 `.js` 확장자를 반드시 명시한다.** Vite는 확장자 없는
+  import를 해석하지만 plain Node는 못 한다. `scripts/audit-data.mjs`가 Node로 `src/`의
+  모듈을 직접 불러오므로, 그 경로에 걸리는 모든 모듈
+  (`speciesCanonical`·`allergenDatabase`·`coordRepair`·`qualityFlags`)의 상호 import는
+  `'./speciesCanonical.js'`처럼 확장자를 붙여야 한다. 기존 컴포넌트 코드의
+  확장자 없는 import는 Vite만 거치므로 건드리지 않는다.
+- **`npm run lint`는 main에서도 실패한다** (기존 에러 37개: `MarkerClustering.js` 24,
+  `Map.jsx` 12, `api.js` 1). 따라서 "전체 통과"를 게이트로 쓰지 말고
+  `npx eslint <내가 만진 파일>`이 클린한지, 전체 에러 수가 늘지 않았는지로 확인한다.
 
 ---
 
