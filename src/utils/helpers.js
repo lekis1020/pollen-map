@@ -7,9 +7,23 @@ export function getUniqueCities(data) {
   return [...cities].sort();
 }
 
-// 데이터에서 고유한 수종 목록 추출
+// 레코드에 포함된 수종 목록. 정규화된 speciesList가 있으면 그것을 쓴다.
+// speciesList가 빈 배열이면 원본이 숫자·기호·결주 같은 무효값이라는 뜻이다.
+function speciesOf(item) {
+  if (item.speciesList) return item.speciesList;
+  return item.species ? [item.species] : [];
+}
+
+// 데이터에서 고유한 수종 목록 추출.
+// 원본에는 '1111', '×', '?' 같은 값이 수종명 칸에 들어있어 그대로 쓰면
+// 필터 드롭다운에 선택지로 노출된다. 정규화 결과를 써서 걸러낸다.
 export function getUniqueSpecies(data) {
-  const species = new Set(data.map((item) => item.species).filter(Boolean));
+  const species = new Set();
+  for (const item of data) {
+    for (const name of speciesOf(item)) {
+      if (name) species.add(name);
+    }
+  }
   return [...species].sort();
 }
 
@@ -29,8 +43,9 @@ export function filterData(data, filters) {
     // 지역 필터
     if (filters.city && item.city !== filters.city) return false;
 
-    // 수종 필터
-    if (filters.species && item.species !== filters.species) return false;
+    // 수종 필터. 복수 수종 기록도 포함된 종 중 하나가 맞으면 통과시킨다 —
+    // "은행나무+이팝나무"는 이팝나무로 걸러도 나와야 한다.
+    if (filters.species && !speciesOf(item).includes(filters.species)) return false;
 
     // 알레르기 등급 필터
     if (filters.allergenLevels && filters.allergenLevels.length > 0) {

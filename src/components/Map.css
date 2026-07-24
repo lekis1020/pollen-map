@@ -225,3 +225,45 @@
     bottom: 76px;
   }
 }
+
+/* 품질 플래그 경고 — healthcare-clean warning 토큰 재사용 */
+.popup-quality-note {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border: 1px dashed #b45309;
+  border-radius: 10px;
+  background: #fffbeb;
+  color: #78350f;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.popup-quality-note strong {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #b45309;
+}
+
+.popup-quality-note ul {
+  margin: 0;
+  padding-left: 16px;
+}
+
+.popup-quality-fixed {
+  margin: 6px 0 0;
+  color: #134e4a;
+}
+
+/* 부분일치로 추정된 알레르기 정보임을 표시 */
+.popup-inferred {
+  display: inline-block;
+  margin-left: 4px;
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: #f1f5f9;
+  color: #64748b;
+  font-size: 11px;
+}

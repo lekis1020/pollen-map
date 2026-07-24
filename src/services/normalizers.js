@@ -82,6 +82,9 @@ export function normalizeStreetTree(item) {
 }
 
 export function normalizeFamousForest(item) {
+  // 명품숲의 species는 "가문비나무, 낙엽송, 대왕참나무, 백합나무, 등"처럼
+  // 여러 종이 한 칸에 들어있다. 가로수 소스와 같은 규칙으로 분해한다.
+  const canon = canonicalizeSpecies(item.species);
   return {
     id: item.id,
     sourceType: 'famousForest',
@@ -90,7 +93,10 @@ export function normalizeFamousForest(item) {
     address: item.address,
     city: getCityFromAddress(item.address),
     district: '',
-    species: item.species,
+    species: item.species,       // 원본 보존
+    speciesList: canon.species,
+    speciesKind: canon.kind,
+    qualityFlags: [],
     areaHa: item.areaHa,
     management: item.management,
     contact: item.contact,

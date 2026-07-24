@@ -329,6 +329,205 @@ export const ALLERGEN_DATABASE = [
     symptoms: '경미한 비염 (충매화)',
     keywords: ['튤립나무', '백합나무'],
   },
+
+  // ===================================================================
+  // 아래는 2026-07-24 조사로 추가된 수종.
+  // 근거: docs/superpowers/specs/2026-07-24-research-allergen-species.md
+  // (PubMed, WHO/IUIS Allergen Nomenclature, 국립생물자원관 『한반도 알레르기
+  //  유발 꽃가루』, 국립기상과학원)
+  //
+  // 등급 1은 "알레르기를 일으키지 않는다"가 아니라 "충매화·조매화라
+  // 공기 중 꽃가루 노출이 적어 흡입 알레르겐으로서 위험이 낮다"는 뜻이다.
+  // ===================================================================
+
+  // === 높음 (3) - 풍매화 ===
+  {
+    name: '히말라야시다',
+    englishName: 'Deodar Cedar',
+    scientificName: 'Cedrus deodara',
+    level: 3,
+    pollenMonths: [10, 11],
+    // Rawat 2000 (PMID 10921460): 아토피 인구 7.5% SPT 양성, 양성자의 65.8%에서
+    // 특이 IgE 상승. Bist 2005 (PMID 16252835): 자작나무·오리나무와 동일 선상의
+    // 주요 감작원. 한국인 대상 감작률 조사는 없으나 10~11월 개화라 가을철
+    // 감별진단에 가치가 있어 등급 3 유지.
+    symptoms: '비염, 결막염, 천식 (가을 개화 풍매화. 근거 문헌은 인도 대상이며 한국인 감작률 자료는 없음)',
+    keywords: ['히말라야시다', '히말리야시다', '희말라야시다', '히말라야 시다', '개잎갈나무', '설송'],
+  },
+  {
+    name: '가시나무',
+    englishName: 'Ring-cupped Oak',
+    scientificName: 'Quercus myrsinifolia',
+    level: 3,
+    pollenMonths: [4, 5],
+    // 참나무속 공통 알레르겐 기반 추정. Q. myrsinifolia 종 자체의 직접 감작
+    // 연구는 없으며 국립생물자원관도 국내 상록 참나무류의 데이터 공백을 인정.
+    // 키워드는 실제로 참나무속인 표기만 등재한다 — 홍가시나무(Photinia)·
+    // 호랑가시나무(Ilex)는 전혀 다른 속이므로 별도 항목으로 분리했다.
+    symptoms: '비염, 결막염, 천식 (참나무속 공통 알레르겐 기반 추정)',
+    keywords: ['가시나무', '종가시나무', '붉가시나무', '가시나무류'],
+  },
+
+  // === 낮음 (1) - 충매화 ===
+  {
+    name: '감나무',
+    englishName: 'Persimmon',
+    scientificName: 'Diospyros kaki',
+    level: 1,
+    pollenMonths: [5, 6],
+    symptoms: '흡입 노출 보고 없음 (충매화로 공기 중 꽃가루 적음). 감 과일 섭취 알레르기는 별개 경로',
+    keywords: ['감나무'],
+  },
+  {
+    name: '층층나무',
+    englishName: 'Giant Dogwood',
+    scientificName: 'Cornus controversa',
+    level: 1,
+    pollenMonths: [5, 6],
+    symptoms: '흡입 노출 보고 없음 (충매화)',
+    keywords: ['층층나무'],
+  },
+  {
+    name: '살구나무',
+    englishName: 'Apricot',
+    scientificName: 'Prunus armeniaca',
+    level: 1,
+    pollenMonths: [3, 4],
+    // Jiang 2015 (PMID 26742437): 과수원 작업자의 직업성 고농도 노출에서
+    // 장미과 화분 교차반응 확인. 도시 가로수 일반 대기 노출과는 노출량이
+    // 수 자릿수 차이라 등급 상향 근거로 쓰지 않는다.
+    symptoms: '일반 도시 노출에서는 보고 없음 (충매화). 과수원 종사자 등 고농도 직업 노출 시 장미과 화분 직업성 알레르기 보고 있음',
+    keywords: ['살구나무'],
+  },
+  {
+    name: '산딸나무',
+    englishName: 'Kousa Dogwood',
+    scientificName: 'Cornus kousa',
+    level: 1,
+    pollenMonths: [5, 6],
+    symptoms: '흡입 노출 보고 없음 (딱정벌레 매개 충매화)',
+    keywords: ['산딸나무'],
+  },
+  {
+    name: '모과나무',
+    englishName: 'Chinese Quince',
+    scientificName: 'Pseudocydonia sinensis',
+    level: 1,
+    pollenMonths: [4, 5],
+    symptoms: '흡입 노출 보고 없음 (충매화)',
+    keywords: ['모과나무'],
+  },
+  {
+    name: '대추나무',
+    englishName: 'Jujube',
+    scientificName: 'Ziziphus jujuba',
+    level: 1,
+    pollenMonths: [6, 7],
+    symptoms: '흡입 노출 보고 없음 (충매화, 밀원식물)',
+    keywords: ['대추나무'],
+  },
+  {
+    name: '꽃사과',
+    englishName: 'Flowering Crabapple',
+    scientificName: 'Malus floribunda',
+    level: 1,
+    pollenMonths: [4, 5],
+    symptoms: '일반 도시 노출에서는 보고 없음 (충매화). 장미과 화분 교차반응은 직업성 고농도 노출 맥락',
+    keywords: ['꽃사과', '꽃사과나무'],
+  },
+  {
+    name: '팥배나무',
+    englishName: 'Korean Mountain Ash',
+    scientificName: 'Aria alnifolia',
+    level: 1,
+    pollenMonths: [5],
+    symptoms: '흡입 노출 보고 없음 (충매화)',
+    keywords: ['팥배나무'],
+  },
+  {
+    name: '때죽나무',
+    englishName: 'Japanese Snowbell',
+    scientificName: 'Styrax japonicus',
+    level: 1,
+    pollenMonths: [5, 6],
+    symptoms: '흡입 노출 보고 없음 (충매화)',
+    keywords: ['때죽나무'],
+  },
+  {
+    name: '후박나무',
+    englishName: 'Machilus',
+    scientificName: 'Machilus thunbergii',
+    level: 1,
+    pollenMonths: [5, 6],
+    symptoms: '흡입 노출 보고 없음 (충매화, 남부지방 상록활엽수)',
+    keywords: ['후박나무'],
+  },
+  {
+    name: '먼나무',
+    englishName: 'Kurogane Holly',
+    scientificName: 'Ilex rotunda',
+    level: 1,
+    pollenMonths: [5, 6],
+    symptoms: '흡입 노출 보고 없음 (충매화, 자웅이주)',
+    keywords: ['먼나무'],
+  },
+  {
+    name: '모감주나무',
+    englishName: 'Goldenrain Tree',
+    scientificName: 'Koelreuteria paniculata',
+    level: 1,
+    pollenMonths: [6, 7],
+    symptoms: '흡입 노출 보고 없음 (충매화)',
+    keywords: ['모감주나무'],
+  },
+  {
+    name: '동백나무',
+    englishName: 'Camellia',
+    scientificName: 'Camellia japonica',
+    level: 1,
+    pollenMonths: [12, 1, 2, 3, 4],
+    symptoms: '흡입 노출 보고 없음 (조매화로 공기 중 꽃가루가 매우 적음)',
+    keywords: ['동백나무', '동백'],
+  },
+  {
+    name: '매화나무',
+    englishName: 'Japanese Apricot',
+    scientificName: 'Prunus mume',
+    level: 1,
+    // 살구나무와 같은 Prunus속·같은 등급이지만 개화가 2월부터로 유의하게 이르다.
+    // keywords를 살구나무에 병합하면 이 이른 개화가 화면에서 사라진다.
+    pollenMonths: [2, 3, 4],
+    symptoms: '흡입 노출 보고 없음 (충매화). 국내 목본 중 개화가 가장 이른 축',
+    keywords: ['매화나무', '매실나무', '매화'],
+  },
+
+  // --- 국명에 "가시"가 들어가지만 참나무속이 아닌 수종 ---
+  // 아래 두 항목은 부분일치 폴백보다 정확 매칭이 먼저 걸리게 해서
+  // '가시나무'(Quercus, 등급 3)로 오분류되는 것을 막는 역할도 한다.
+  // 이 항목이 없으면 74건이 등급 1 → 3으로 잘못 상향된다.
+  {
+    name: '홍가시나무',
+    englishName: 'Japanese Photinia',
+    scientificName: 'Photinia glabra',
+    level: 1,
+    pollenMonths: [5, 6],
+    // 장미과 Photinia속. 국명에 "가시나무"가 들어가지만 참나무과가 아니며,
+    // "홍"은 새 잎이 붉게 물드는 관상 특성에서 왔다.
+    symptoms: '흡입 노출 보고 없음 (충매화, 장미과). 참나무속과 무관',
+    keywords: ['홍가시나무', '홍가시'],
+  },
+  {
+    name: '호랑가시나무',
+    englishName: 'Chinese Holly',
+    scientificName: 'Ilex cornuta',
+    level: 1,
+    pollenMonths: [4, 5],
+    // 감탕나무과 Ilex속. 먼나무(Ilex rotunda)와 같은 속이라 등급도 같다.
+    // 국명의 "가시"는 잎 가장자리 거치에서 온 것이지 참나무와 무관하다.
+    // 완도호랑가시나무는 호랑가시나무 × 감탕나무의 자연교잡종.
+    symptoms: '흡입 노출 보고 없음 (충매화, 자웅이주). 참나무속과 무관',
+    keywords: ['호랑가시나무', '호랑가시', '완도호랑가시나무'],
+  },
 ];
 
 // 별칭 → DB 항목 정확 매칭 인덱스.

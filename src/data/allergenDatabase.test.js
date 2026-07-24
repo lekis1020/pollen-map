@@ -75,3 +75,72 @@ describe('등급 0의 의미', () => {
     expect(ALLERGEN_LEVELS[0].label).toBe('정보 없음');
   });
 });
+
+describe('미등재 수종 커버리지', () => {
+  // 감사에서 등급 0으로 떨어진 수종들.
+  // 등급 근거는 docs/superpowers/specs/2026-07-24-research-allergen-species.md
+  const NEWLY_COVERED = [
+    '감나무', '층층나무', '살구나무', '산딸나무', '모과나무',
+    '히말라야시다', '대추나무', '꽃사과', '팥배나무', '때죽나무',
+    '후박나무', '먼나무', '모감주나무', '동백나무',
+  ];
+
+  it.each(NEWLY_COVERED)('%s가 DB에 정확 매칭으로 등재되어 있다', (name) => {
+    const m = getAllergenMatch(name);
+    expect(m.info).not.toBeNull();
+    expect(m.matchType).toBe('exact');
+  });
+
+  it('히말라야시다는 풍매화 가을 개화 알레르겐이므로 등급 3이다', () => {
+    // Rawat 2000 (PMID 10921460), Bist 2005 (PMID 16252835) — SPT/특이 IgE 근거
+    const info = getAllergenInfo('히말라야시다');
+    expect(info.level).toBe(3);
+    expect(info.pollenMonths).toEqual([10, 11]);
+  });
+
+  it('히말라야시다의 표기 변이도 매칭된다', () => {
+    // 실제 데이터에 '히말리야시다'(16), '개잎갈나무' 표기가 있다
+    expect(getAllergenLevel('히말리야시다')).toBe(3);
+    expect(getAllergenLevel('개잎갈나무')).toBe(3);
+  });
+
+  it('충매화 수종은 등급 1이다', () => {
+    for (const name of ['감나무', '산딸나무', '때죽나무', '모감주나무']) {
+      expect(getAllergenLevel(name)).toBe(1);
+    }
+  });
+
+  it('동백나무는 조매화라 등급 1이다', () => {
+    expect(getAllergenLevel('동백나무')).toBe(1);
+    expect(getAllergenLevel('동백')).toBe(1);
+  });
+});
+
+describe('참나무속 오분류 방지', () => {
+  // '가시나무'(Quercus, 등급 3)를 등재하면 부분일치 폴백 때문에
+  // 이름만 비슷한 다른 속이 참나무로 잘못 분류될 수 있다.
+  // 실제 가로수 데이터에 존재하는 라벨이라 실害가 있다.
+  it('진짜 참나무속은 등급 3을 받는다', () => {
+    for (const name of ['가시나무', '종가시나무', '붉가시나무', '가시나무류']) {
+      const m = getAllergenMatch(name);
+      expect(m.info.name).toBe('가시나무');
+      expect(m.info.level).toBe(3);
+    }
+  });
+
+  it('홍가시나무(Photinia)는 참나무로 분류되지 않는다', () => {
+    // 장미과 Photinia glabra. 데이터에 홍가시나무 12건, 홍가시 57건.
+    for (const name of ['홍가시나무', '홍가시']) {
+      expect(getAllergenInfo(name)?.name).not.toBe('가시나무');
+      expect(getAllergenLevel(name)).not.toBe(3);
+    }
+  });
+
+  it('호랑가시나무(Ilex)는 참나무로 분류되지 않는다', () => {
+    // 감탕나무과 Ilex. 데이터에 호랑가시나무 1건, 완도호랑가시나무 3건.
+    for (const name of ['호랑가시나무', '호랑가시', '완도호랑가시나무']) {
+      expect(getAllergenInfo(name)?.name).not.toBe('가시나무');
+      expect(getAllergenLevel(name)).not.toBe(3);
+    }
+  });
+});
