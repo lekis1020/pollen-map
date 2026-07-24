@@ -621,3 +621,30 @@
     animation: none !important;
   }
 }
+
+/* 로드뷰 메타데이터 교차검증 결과 */
+.sv-cross-check {
+  padding: 10px 20px;
+  border-top: 1px solid #e2e8f0;
+  background: #f8fafc;
+}
+
+.sv-cross-check-item {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: #475569;
+}
+
+.sv-cross-check-item + .sv-cross-check-item {
+  margin-top: 6px;
+}
+
+.sv-cross-check-item--warn {
+  color: #78350f;
+}
+
+.sv-cross-check-item strong {
+  color: #0f172a;
+  font-weight: 600;
+}

@@ -27,12 +27,17 @@ export default function FilterPanel({
     onFilterChange({ ...filters, allergenOnly: !filters.allergenOnly });
   };
 
+  const handleHideFlaggedToggle = () => {
+    onFilterChange({ ...filters, hideFlagged: !filters.hideFlagged });
+  };
+
   const handleReset = () => {
     onFilterChange({
       city: '',
       species: '',
       allergenLevels: [],
       allergenOnly: false,
+      hideFlagged: false,
     });
   };
 
@@ -114,12 +119,28 @@ export default function FilterPanel({
         </label>
       </div>
 
+      <div className="filter-section">
+        <label className="filter-label">데이터 품질</label>
+        <label className="toggle-label">
+          <input
+            type="checkbox"
+            checked={filters.hideFlagged || false}
+            onChange={handleHideFlaggedToggle}
+          />
+          <span>품질 문제가 확인된 기록 숨기기</span>
+        </label>
+        <p className="quality-note">
+          좌표가 등록 기관의 관할 구역을 벗어나거나 수종·도로명이 비어 있는 등,
+          등록 원본에서 문제가 확인된 기록입니다. 원본은 수정하지 않고 표시만 조정합니다.
+        </p>
+      </div>
+
       <div className="filter-section data-sources">
         <h3 className="data-sources-title">데이터 출처</h3>
         <ul className="data-sources-list">
           <li>
             <strong>전국 가로수길</strong>
-            <span>공공데이터포털 · tn_pubr_public_sttree_stret_api</span>
+            <span>공공데이터포털 · tn_pubr_public_sttree_stret_api · 81.7%가 2025~2026년 기준</span>
           </li>
           <li>
             <strong>서울 가로수 (개별)</strong>
@@ -131,7 +152,11 @@ export default function FilterPanel({
           </li>
         </ul>
         <p className="data-sources-note">
-          ※ 좌표는 2012~2022년 조사 기준. 실제 로드뷰 촬영 시점과 차이가 있을 수 있습니다.
+          ※ 조사 시점과 로드뷰 촬영 시점이 달라 현장과 차이가 있을 수 있습니다.
+          로드뷰 화면에서 양쪽 시점을 함께 표시합니다.
+        </p>
+        <p className="data-sources-note">
+          ※ 원본에 결주·고사로 기재된 기록은 나무가 아니므로 지도에서 제외합니다.
         </p>
       </div>
     </div>

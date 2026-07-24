@@ -1,10 +1,80 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { getAllergenInfo, getAllergenLevel, getPollenSeasonText, ALLERGEN_LEVELS } from '../data/allergenDatabase';
+import { getAllergenInfos, getPollenSeasonText, ALLERGEN_LEVELS } from '../data/allergenDatabase';
+import { FLAG_LABEL } from '../utils/qualityFlags';
 import Legend from './Legend';
 import './Map.css';
 
 const MARKER_CAP = 2000;
 const POLYLINE_CAP = 1500;
+
+// 팝업은 문자열 HTML로 조립되므로 데이터 값은 반드시 이스케이프한다.
+// 공공데이터 원본 문자열이 그대로 들어오는 자리다.
+const escapeHtml = (value) =>
+  String(value ?? '').replace(/[&<>"']/g, (c) => (
+    { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
+  ));
+
+// 레코드에서 알레르기 판정 대상 수종 목록을 뽑는다.
+// speciesList가 있으면 정규화·분해된 결과를, 없으면 원본 단일 값을 쓴다.
+function speciesOf(item) {
+  if (item.speciesList?.length) return item.speciesList;
+  return item.species ? [item.species] : [];
+}
+
+// 레코드의 알레르기 등급은 포함된 수종 중 최댓값이다.
+// "은행나무+이팝나무"처럼 여러 종이 있으면 가장 위험한 쪽을 기준으로 표시한다.
+function maxAllergenLevel(item) {
+  const matches = getAllergenInfos(speciesOf(item));
+  return Math.max(0, ...matches.map((m) => (m.info ? m.info.level : 0)));
+}
+
+// 팝업의 알레르기 관련 행을 만든다. 네 종류 팝업이 공유한다.
+// 복수 수종이면 모든 종의 꽃가루 시기·증상을 병기한다 —
+// 예전에는 첫 매칭 하나만 보여줘서 두 번째 이후 종 정보가 소실됐다.
+function buildAllergenRows(item, { withSymptoms = true } = {}) {
+  const matches = getAllergenInfos(speciesOf(item));
+  const level = Math.max(0, ...matches.map((m) => (m.info ? m.info.level : 0)));
+  const levelInfo = ALLERGEN_LEVELS[level];
+
+  let rows = `
+      <tr><td class="popup-label">알레르기 등급</td><td><span class="allergen-badge" style="background:${levelInfo.color}">${escapeHtml(levelInfo.label)}</span></td></tr>`;
+
+  const multi = matches.filter((m) => m.info).length > 1;
+  for (const match of matches) {
+    if (!match.info) continue;
+    const inferred = match.matchType === 'inferred'
+      ? `<span class="popup-inferred">${escapeHtml(match.info.name)} 기준 추정</span>`
+      : '';
+    const label = multi
+      ? `${escapeHtml(match.species)} 꽃가루 시기`
+      : '꽃가루 시기';
+    rows += `
+      <tr><td class="popup-label">${label}</td><td>${escapeHtml(getPollenSeasonText(match.info.pollenMonths))} ${inferred}</td></tr>`;
+    if (withSymptoms) {
+      rows += `
+      <tr><td class="popup-label">주요 증상</td><td class="popup-symptoms">${escapeHtml(match.info.symptoms)}</td></tr>`;
+    }
+  }
+  return rows;
+}
+
+// 품질 플래그가 있으면 근거와 함께 경고 블록을 만든다.
+// 원본을 고칠 권한이 없으므로, 고치는 대신 무엇이 의심스러운지 밝힌다.
+function buildQualityNote(item) {
+  const flags = item.qualityFlags || [];
+  const corrected = item.coordCorrected;
+  if (!flags.length && !corrected) return '';
+
+  let inner = '';
+  if (flags.length) {
+    const lines = flags.map((f) => `<li>${escapeHtml(FLAG_LABEL[f] || f)}</li>`).join('');
+    inner += `<strong>이 기록에서 확인된 문제</strong><ul>${lines}</ul>`;
+  }
+  if (corrected) {
+    inner += '<p class="popup-quality-fixed">좌표에 한 자리 오타가 있어 보정해 표시했습니다.</p>';
+  }
+  return `<div class="popup-quality-note">${inner}</div>`;
+}
 
 // 균등 샘플링: 전체 배열에서 cap개를 고르게 추출
 function sampleEven(arr, cap) {
@@ -306,66 +376,50 @@ export default function Map({ data, onStreetViewClick }) {
 
   // Info content for individual tree marker
   const buildMarkerInfo = useCallback((item) => {
-    const level = getAllergenLevel(item.species);
-    const levelInfo = ALLERGEN_LEVELS[level];
-    const allergenInfo = getAllergenInfo(item.species);
-
     let rows = `
-      <tr><td class="popup-label">지역</td><td>${item.city} ${item.district}</td></tr>`;
+      <tr><td class="popup-label">지역</td><td>${escapeHtml(item.city)} ${escapeHtml(item.district)}</td></tr>`;
     if (item.species) {
       rows += `
-      <tr><td class="popup-label">수종</td><td><strong>${item.species}</strong></td></tr>`;
+      <tr><td class="popup-label">수종</td><td><strong>${escapeHtml(item.species)}</strong></td></tr>`;
     }
     if (item.plantCount > 0) {
       rows += `
       <tr><td class="popup-label">식재본수</td><td>${item.plantCount.toLocaleString()}본</td></tr>`;
     }
-    rows += `
-      <tr><td class="popup-label">알레르기 등급</td><td><span class="allergen-badge" style="background:${levelInfo.color}">${levelInfo.label}</span></td></tr>`;
-    if (allergenInfo) {
-      rows += `
-      <tr><td class="popup-label">꽃가루 시기</td><td>${getPollenSeasonText(allergenInfo.pollenMonths)}</td></tr>
-      <tr><td class="popup-label">주요 증상</td><td class="popup-symptoms">${allergenInfo.symptoms}</td></tr>`;
-    }
+    rows += buildAllergenRows(item);
 
     const sourceNote = item.institution
-      ? `<p class="popup-source-note">출처: ${item.institution} · 도로명은 등록 원본 그대로 표시되며 일부 오기재가 있을 수 있습니다.</p>`
+      ? `<p class="popup-source-note">출처: ${escapeHtml(item.institution)} · 도로명은 등록 원본 그대로 표시되며 일부 오기재가 있을 수 있습니다.</p>`
       : '<p class="popup-source-note">도로명은 공공데이터 원본 그대로 표시되며 일부 오기재가 있을 수 있습니다.</p>';
 
     return `<div class="tree-popup">
       <div class="tree-popup-header">
         <div class="tree-popup-title">
           <span class="tree-popup-eyebrow">개별 가로수</span>
-          <h3>${item.locationName || item.roadName}</h3>
+          <h3>${escapeHtml(item.locationName || item.roadName) || '도로명 미상'}</h3>
         </div>
       </div>
       <table><tbody>${rows}</tbody></table>
+      ${buildQualityNote(item)}
       ${sourceNote}
       <button class="street-view-btn" id="naver-sv-btn">로드뷰 보기</button>
     </div>`;
   }, []);
 
   const buildFamousForestInfo = useCallback((item) => {
-    const level = getAllergenLevel(item.species);
-    const levelInfo = ALLERGEN_LEVELS[level];
-    const allergenInfo = getAllergenInfo(item.species);
     let rows = `
-      <tr><td class="popup-label">주소</td><td>${item.address || '-'}</td></tr>
-      <tr><td class="popup-label">주요 수종</td><td><strong>${item.species || '-'}</strong></td></tr>
+      <tr><td class="popup-label">주소</td><td>${escapeHtml(item.address) || '-'}</td></tr>
+      <tr><td class="popup-label">주요 수종</td><td><strong>${escapeHtml(item.species) || '-'}</strong></td></tr>
       <tr><td class="popup-label">면적</td><td>${item.areaHa ? `${item.areaHa.toLocaleString()} ha` : '-'}</td></tr>
-      <tr><td class="popup-label">유형·선정</td><td>${item.type || '-'}${item.year ? ` · ${item.year}` : ''}</td></tr>
-      <tr><td class="popup-label">알레르기 등급</td><td><span class="allergen-badge" style="background:${levelInfo.color}">${levelInfo.label}</span></td></tr>`;
-    if (allergenInfo) {
-      rows += `
-      <tr><td class="popup-label">꽃가루 시기</td><td>${getPollenSeasonText(allergenInfo.pollenMonths)}</td></tr>`;
-    }
+      <tr><td class="popup-label">유형·선정</td><td>${escapeHtml(item.type) || '-'}${item.year ? ` · ${escapeHtml(item.year)}` : ''}</td></tr>`;
+    rows += buildAllergenRows(item, { withSymptoms: false });
     if (item.management) {
       rows += `
-      <tr><td class="popup-label">관리기관</td><td>${item.management}</td></tr>`;
+      <tr><td class="popup-label">관리기관</td><td>${escapeHtml(item.management)}</td></tr>`;
     }
     if (item.note) {
       rows += `
-      <tr><td class="popup-label">특이사항</td><td>${item.note}</td></tr>`;
+      <tr><td class="popup-label">특이사항</td><td>${escapeHtml(item.note)}</td></tr>`;
     }
 
     return `<div class="tree-popup">
@@ -382,32 +436,26 @@ export default function Map({ data, onStreetViewClick }) {
 
   // Info content for polyline (group)
   const buildPolylineInfo = useCallback((pl) => {
-    const level = getAllergenLevel(pl.species);
-    const levelInfo = ALLERGEN_LEVELS[level];
-    const allergenInfo = getAllergenInfo(pl.species);
     let rows = `
-      <tr><td class="popup-label">지역</td><td>${pl.city} ${pl.district}</td></tr>
-      <tr><td class="popup-label">수종</td><td><strong>${pl.species}</strong></td></tr>
-      <tr><td class="popup-label">구간 그루수</td><td>${pl.count.toLocaleString()}본</td></tr>
-      <tr><td class="popup-label">알레르기 등급</td><td><span class="allergen-badge" style="background:${levelInfo.color}">${levelInfo.label}</span></td></tr>`;
-    if (allergenInfo) {
-      rows += `
-      <tr><td class="popup-label">꽃가루 시기</td><td>${getPollenSeasonText(allergenInfo.pollenMonths)}</td></tr>
-      <tr><td class="popup-label">주요 증상</td><td class="popup-symptoms">${allergenInfo.symptoms}</td></tr>`;
-    }
+      <tr><td class="popup-label">지역</td><td>${escapeHtml(pl.city)} ${escapeHtml(pl.district)}</td></tr>
+      <tr><td class="popup-label">수종</td><td><strong>${escapeHtml(pl.species)}</strong></td></tr>
+      <tr><td class="popup-label">구간 그루수</td><td>${pl.count.toLocaleString()}본</td></tr>`;
+    rows += buildAllergenRows(pl);
+
     const inst = pl.representative?.institution;
     const sourceNote = inst
-      ? `<p class="popup-source-note">출처: ${inst} · 도로명은 등록 원본 그대로 표시되며 일부 오기재가 있을 수 있습니다.</p>`
+      ? `<p class="popup-source-note">출처: ${escapeHtml(inst)} · 도로명은 등록 원본 그대로 표시되며 일부 오기재가 있을 수 있습니다.</p>`
       : '<p class="popup-source-note">도로명은 공공데이터 원본 그대로 표시되며 일부 오기재가 있을 수 있습니다.</p>';
 
     return `<div class="tree-popup">
       <div class="tree-popup-header">
         <div class="tree-popup-title">
           <span class="tree-popup-eyebrow">가로수길 구간</span>
-          <h3>${pl.roadName}</h3>
+          <h3>${escapeHtml(pl.roadName) || '도로명 미상'}</h3>
         </div>
       </div>
       <table><tbody>${rows}</tbody></table>
+      ${buildQualityNote(pl.representative || pl)}
       ${sourceNote}
       <button class="street-view-btn" id="naver-sv-btn">대표지점 로드뷰</button>
     </div>`;
@@ -500,8 +548,7 @@ export default function Map({ data, onStreetViewClick }) {
     const cappedPolylines = visiblePolylines.slice(0, POLYLINE_CAP);
 
     const plObjects = cappedPolylines.map((pl) => {
-      const level = getAllergenLevel(pl.species);
-      const color = ALLERGEN_LEVELS[level]?.color || '#3498db';
+      const color = ALLERGEN_LEVELS[maxAllergenLevel(pl)].color;
       const polyline = new window.naver.maps.Polyline({
         map,
         path: pl.path.map((p) => new window.naver.maps.LatLng(p.lat, p.lng)),
@@ -548,8 +595,7 @@ export default function Map({ data, onStreetViewClick }) {
     const visibleMarkers = sampleEven(inBounds, MARKER_CAP);
 
     const markers = visibleMarkers.map((item) => {
-      const level = getAllergenLevel(item.species);
-      const color = ALLERGEN_LEVELS[level]?.color || '#3498db';
+      const color = ALLERGEN_LEVELS[maxAllergenLevel(item)].color;
       const isFamousForest = item.sourceType === 'famousForest';
       const marker = new window.naver.maps.Marker({
         position: new window.naver.maps.LatLng(item.latitude, item.longitude),

@@ -7,9 +7,23 @@ export function getUniqueCities(data) {
   return [...cities].sort();
 }
 
-// 데이터에서 고유한 수종 목록 추출
+// 레코드에 포함된 수종 목록. 정규화된 speciesList가 있으면 그것을 쓴다.
+// speciesList가 빈 배열이면 원본이 숫자·기호·결주 같은 무효값이라는 뜻이다.
+function speciesOf(item) {
+  if (item.speciesList) return item.speciesList;
+  return item.species ? [item.species] : [];
+}
+
+// 데이터에서 고유한 수종 목록 추출.
+// 원본에는 '1111', '×', '?' 같은 값이 수종명 칸에 들어있어 그대로 쓰면
+// 필터 드롭다운에 선택지로 노출된다. 정규화 결과를 써서 걸러낸다.
 export function getUniqueSpecies(data) {
-  const species = new Set(data.map((item) => item.species).filter(Boolean));
+  const species = new Set();
+  for (const item of data) {
+    for (const name of speciesOf(item)) {
+      if (name) species.add(name);
+    }
+  }
   return [...species].sort();
 }
 
@@ -19,11 +33,19 @@ export function filterData(data, filters) {
     // 유효한 좌표가 있는 데이터만
     if (!item.latitude || !item.longitude) return false;
 
+    // 원본에 결주·고사로 기재된 항목은 나무가 아니므로 지도에 표시하지 않는다.
+    if (item.speciesKind === 'not-a-tree') return false;
+
+    // 품질 이슈가 있는 기록 숨기기. 기본값은 표시(off)다 —
+    // 기본으로 숨기면 사용자가 데이터가 왜 적은지 알 수 없다.
+    if (filters.hideFlagged && item.qualityFlags?.length) return false;
+
     // 지역 필터
     if (filters.city && item.city !== filters.city) return false;
 
-    // 수종 필터
-    if (filters.species && item.species !== filters.species) return false;
+    // 수종 필터. 복수 수종 기록도 포함된 종 중 하나가 맞으면 통과시킨다 —
+    // "은행나무+이팝나무"는 이팝나무로 걸러도 나와야 한다.
+    if (filters.species && !speciesOf(item).includes(filters.species)) return false;
 
     // 알레르기 등급 필터
     if (filters.allergenLevels && filters.allergenLevels.length > 0) {
@@ -46,8 +68,14 @@ export function calculateStats(data) {
   const speciesMap = {};
   const levelCounts = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0 };
   const sourceCounts = {};
+  let excludedNotATree = 0;
 
   for (const item of data) {
+    // 결주·고사는 나무가 아니므로 통계에서도 뺀다.
+    if (item.speciesKind === 'not-a-tree') {
+      excludedNotATree += 1;
+      continue;
+    }
     const species = item.species || '미확인';
     if (!speciesMap[species]) {
       speciesMap[species] = { count: 0, treeCount: 0 };
@@ -86,5 +114,11 @@ export function calculateStats(data) {
     count,
   }));
 
-  return { speciesStats, levelStats, sourceStats, total: data.length };
+  return {
+    speciesStats,
+    levelStats,
+    sourceStats,
+    total: data.length - excludedNotATree,
+    excludedNotATree,
+  };
 }

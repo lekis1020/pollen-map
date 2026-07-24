@@ -1,6 +1,30 @@
 // 소스별 API 응답 정규화 함수
 
+import { canonicalizeSpecies } from '../data/speciesCanonical.js';
+
 let idCounter = 0;
+
+const JUNK_ONLY = /^[\s0-9?×xX\-.]*$/;
+
+// 도로명 칸에 '3', '6', '12' 같은 값이 들어간 케이스가 있다(서울 소스 7,130그루).
+// 숫자·기호만 있는 값은 도로명이 아니므로 비운다 — 잘못된 정보를 보여주느니
+// "도로명 미상"이 낫다.
+function sanitizeRoadName(raw) {
+  const text = String(raw || '').trim();
+  return !text || JUNK_ONLY.test(text) ? '' : text;
+}
+
+// 전국 소스에는 안정적인 레코드 id가 없다. 기관+도로명+시작좌표로 키를 만든다.
+// scripts/audit-data.mjs와 src/services/api.js가 같은 키를 써야 플래그가 붙는다.
+// 좌표 교정 전 원본 값으로 계산한다 — 플래그도 원본 기준으로 산출되기 때문이다.
+export function nationwideKey(item) {
+  return [
+    item.institutionNm || item.insttNm || '',
+    item.sttreeStretNm || '',
+    item.startLatitude || '',
+    item.startLongitude || '',
+  ].join('|');
+}
 
 const CITY_NAMES = {
   서울: '서울특별시', 부산: '부산광역시', 대구: '대구광역시', 인천: '인천광역시',
@@ -30,15 +54,22 @@ export function normalizeStreetTree(item) {
   const centerLat = rawLat || (startLat && endLat ? (startLat + endLat) / 2 : startLat || 0);
   const centerLng = rawLng || (startLng && endLng ? (startLng + endLng) / 2 : startLng || 0);
 
+  const rawSpecies = item.speciesNm || item.sttreeKnd || '';
+  const canon = canonicalizeSpecies(rawSpecies);
+  const roadName = sanitizeRoadName(item.roadsidTreeRoadNm || item.sttreeStretNm);
+
   return {
     id: `streetTree_${++idCounter}_${centerLat}_${centerLng}`,
     sourceType: 'streetTree',
     sourceLabel: '가로수길',
-    roadName: item.roadsidTreeRoadNm || item.sttreeStretNm || '',
-    locationName: item.roadsidTreeRoadNm || item.sttreeStretNm || '',
+    roadName,
+    locationName: roadName,
     city: item.ctprvnNm || (item.insttNm || '').split(' ')[0] || '',
     district: item.signguNm || (item.insttNm || '').split(' ').slice(1).join(' ') || '',
-    species: item.speciesNm || item.sttreeKnd || '',
+    species: rawSpecies,           // 원본 보존 — 우리는 source of truth가 아니다
+    speciesList: canon.species,    // 정규화·분해 결과
+    speciesKind: canon.kind,
+    qualityFlags: [],              // api.js가 오버레이에서 채운다
     treeCount: parseInt(item.pltngCo || item.sttreeCo, 10) || 0,
     plantCount: parseInt(item.pltngCo || item.sttreeCo, 10) || 0,
     latitude: centerLat,
@@ -51,6 +82,9 @@ export function normalizeStreetTree(item) {
 }
 
 export function normalizeFamousForest(item) {
+  // 명품숲의 species는 "가문비나무, 낙엽송, 대왕참나무, 백합나무, 등"처럼
+  // 여러 종이 한 칸에 들어있다. 가로수 소스와 같은 규칙으로 분해한다.
+  const canon = canonicalizeSpecies(item.species);
   return {
     id: item.id,
     sourceType: 'famousForest',
@@ -59,7 +93,10 @@ export function normalizeFamousForest(item) {
     address: item.address,
     city: getCityFromAddress(item.address),
     district: '',
-    species: item.species,
+    species: item.species,       // 원본 보존
+    speciesList: canon.species,
+    speciesKind: canon.kind,
+    qualityFlags: [],
     areaHa: item.areaHa,
     management: item.management,
     contact: item.contact,

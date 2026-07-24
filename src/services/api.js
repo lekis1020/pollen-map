@@ -1,8 +1,68 @@
 import { DATA_SOURCES, getEnabledSources } from './dataSources';
-import { NORMALIZERS } from './normalizers';
+import { NORMALIZERS, nationwideKey } from './normalizers';
 import { idbGet, idbSet } from './idbCache';
+import { canonicalizeSpecies } from '../data/speciesCanonical.js';
 
 const API_BASE_URL = 'https://api.data.go.kr/openapi';
+
+const JUNK_ONLY = /^[\s0-9?×xX\-.]*$/;
+
+// 도로명 칸의 숫자·기호 값은 도로명이 아니다. normalizers.js와 같은 규칙.
+function sanitizeRoadName(raw) {
+  const text = String(raw || '').trim();
+  return !text || JUNK_ONLY.test(text) ? '' : text;
+}
+
+// 서울 소스의 품질 플래그. 인덱스를 키로 하는 객체다.
+// 실패해도 앱은 동작해야 하므로 빈 객체로 폴백한다.
+async function loadSeoulQualityFlags() {
+  try {
+    const res = await fetch('/data/quality-flags.json');
+    if (!res.ok) return {};
+    const json = await res.json();
+    return json?.seoul?.flags || {};
+  } catch {
+    return {};
+  }
+}
+
+// 품질 오버레이(플래그 + 좌표 교정)를 한 번만 로드해 재사용한다.
+// 실패해도 앱은 동작해야 하므로 빈 오버레이로 폴백한다.
+let overlayPromise = null;
+function getQualityOverlay() {
+  overlayPromise ||= (async () => {
+    const empty = { nationwideFlags: {}, correctionsByKey: new Map() };
+    try {
+      const [flagsRes, corrRes] = await Promise.all([
+        fetch('/data/quality-flags.json'),
+        fetch('/data/corrections.json'),
+      ]);
+      const flagsJson = flagsRes.ok ? await flagsRes.json() : null;
+      const corrJson = corrRes.ok ? await corrRes.json() : null;
+      const correctionsByKey = new Map();
+      for (const correction of corrJson?.corrections || []) {
+        if (!correctionsByKey.has(correction.key)) correctionsByKey.set(correction.key, []);
+        correctionsByKey.get(correction.key).push(correction);
+      }
+      return {
+        nationwideFlags: flagsJson?.nationwide?.flags || {},
+        correctionsByKey,
+      };
+    } catch {
+      return empty;
+    }
+  })();
+  return overlayPromise;
+}
+
+// 좌표 교정을 원본에 적용한다. 원본 객체는 건드리지 않고 복사본을 만든다.
+function applyCorrections(rawItem, correctionsByKey) {
+  const corrections = correctionsByKey.get(nationwideKey(rawItem));
+  if (!corrections) return { item: rawItem, corrected: false };
+  const item = { ...rawItem };
+  for (const correction of corrections) item[correction.field] = correction.to;
+  return { item, corrected: true };
+}
 
 function getApiKey() {
   return (import.meta.env.VITE_DATA_API_KEY || '').trim();
@@ -40,9 +100,25 @@ async function fetchSourcePage(source, { city, district, pageNo = 1, numOfRows =
   const items = body?.items || [];
   const itemList = Array.isArray(items) ? items : [items];
   const normalize = NORMALIZERS[source.id];
+  const overlay = await getQualityOverlay();
+
+  const valid = itemList.filter(
+    (item) => (item.latitude && item.longitude) || (item.startLatitude && item.startLongitude)
+  );
+  // 플래그는 원본 기준으로 산출됐으므로 교정 전 키로 조회한다.
+  const keys = valid.map(nationwideKey);
+  const normalized = valid.map((raw) => {
+    const { item, corrected } = applyCorrections(raw, overlay.correctionsByKey);
+    return { record: normalize(item), corrected };
+  });
+  normalized.forEach(({ record, corrected }, i) => {
+    record.sourceKey = keys[i];
+    record.qualityFlags = overlay.nationwideFlags[keys[i]] || [];
+    record.coordCorrected = corrected;
+  });
 
   return {
-    items: itemList.filter((item) => (item.latitude && item.longitude) || (item.startLatitude && item.startLongitude)).map(normalize),
+    items: normalized.map(({ record }) => record),
     totalCount: parseInt(body?.totalCount, 10) || 0,
     pageNo: parseInt(body?.pageNo, 10) || 1,
     numOfRows: parseInt(body?.numOfRows, 10) || numOfRows,
@@ -93,7 +169,9 @@ export async function fetchTreeData({ city, district, pageNo = 1, numOfRows = 10
 // 서울 개별 가로수 정적 JSON 로드 (OA-1325, ~257k 그루)
 // 컬럼형 포맷 + 사전 인코딩 → 7.4MB (기존 29MB 대비 75%↓)
 // IndexedDB 캐시: 변환된 객체를 저장하여 재방문 시 네트워크+파싱+변환 생략
-const SEOUL_CACHE_KEY = 'seoul-trees-v2';
+// v3: speciesList/speciesKind/qualityFlags 필드가 추가되어 이전 캐시는 쓸 수 없다.
+// 필드 없는 캐시를 그대로 쓰면 결주·고사가 다시 나무로 표시된다.
+const SEOUL_CACHE_KEY = 'seoul-trees-v3';
 const SEOUL_CACHE_TTL = 24 * 60 * 60 * 1000; // 24시간
 
 export async function loadSeoulTrees() {
@@ -104,7 +182,10 @@ export async function loadSeoulTrees() {
   }
 
   // 2) 네트워크에서 컬럼형 JSON 로드 + 행 객체로 변환
-  const res = await fetch('/data/seoul-trees.json');
+  const [res, seoulFlags] = await Promise.all([
+    fetch('/data/seoul-trees.json'),
+    loadSeoulQualityFlags(),
+  ]);
   if (!res.ok) throw new Error(`서울 가로수 데이터 로드 실패: ${res.status}`);
   const data = await res.json();
   const { dicts, lat, lng, sp, gu, road, generatedAt } = data;
@@ -112,15 +193,21 @@ export async function loadSeoulTrees() {
   const items = new Array(count);
 
   for (let i = 0; i < count; i++) {
+    const rawSpecies = dicts.sp[sp[i]];
+    const canon = canonicalizeSpecies(rawSpecies);
+    const roadName = sanitizeRoadName(dicts.road[road[i]]);
     items[i] = {
       id: `st_${i}`,
       sourceType: 'seoulTree',
       sourceLabel: '서울 가로수 (개별)',
-      roadName: dicts.road[road[i]],
-      locationName: dicts.road[road[i]],
+      roadName,
+      locationName: roadName,
       city: '서울특별시',
       district: dicts.gu[gu[i]],
-      species: dicts.sp[sp[i]],
+      species: rawSpecies,          // 원본 보존
+      speciesList: canon.species,
+      speciesKind: canon.kind,
+      qualityFlags: seoulFlags[i] || [],
       treeCount: 1,
       plantCount: 1,
       latitude: lat[i],

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
+import { compareTimeline, compareRoadName } from '../utils/roadviewCheck.js';
 import './StreetViewModal.css';
 
 const EARTH_RADIUS_M = 6371000;
@@ -74,6 +75,8 @@ export default function StreetViewModal({ treeData, onClose }) {
   const [distanceMeters, setDistanceMeters] = useState(null);
   const [loading, setLoading] = useState(true);
   const [mapType, setMapType] = useState('normal'); // 'normal' | 'hybrid'
+  // 파노라마 메타데이터. 이미지는 취득·저장하지 않고 이것만 화면에서 1회 사용한다.
+  const [panoMeta, setPanoMeta] = useState(null); // { panoId, address, photodate }
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -102,6 +105,7 @@ export default function StreetViewModal({ treeData, onClose }) {
     setError(null);
     setActualPosition(null);
     setDistanceMeters(null);
+    setPanoMeta(null);
     setLoading(true);
 
     const midLat = treeData.latitude;
@@ -158,6 +162,18 @@ export default function StreetViewModal({ treeData, onClose }) {
               setActualPosition({ lat: panoLat, lng: panoLng });
               const dist = haversineMeters(midLat, midLng, panoLat, panoLng);
               setDistanceMeters(Math.round(dist));
+            }
+            // 촬영일자·주소는 데이터와 대조하는 데 쓴다.
+            // 이미지가 아니라 메타데이터이며, 저장하지 않고 이 화면에서만 쓴다.
+            const loc = typeof panorama.getLocation === 'function'
+              ? panorama.getLocation()
+              : null;
+            if (loc) {
+              setPanoMeta({
+                panoId: loc.panoId || null,
+                address: loc.address || loc.title || null,
+                photodate: loc.photodate || null,
+              });
             }
           } catch {
             /* keep panorama visible */
@@ -265,6 +281,15 @@ export default function StreetViewModal({ treeData, onClose }) {
     setMapType((t) => (t === 'normal' ? 'hybrid' : 'normal'));
   }, []);
 
+  const timeline = compareTimeline({
+    photodate: panoMeta?.photodate,
+    referenceDate: treeData.referenceDate,
+  });
+  const roadMatch = compareRoadName({
+    roadName: treeData.roadName,
+    address: panoMeta?.address,
+  });
+
   // 검증 상태
   const getVerification = () => {
     if (error) return { label: '로드뷰 미지원', tone: 'danger', icon: ICONS.alert };
@@ -345,6 +370,24 @@ export default function StreetViewModal({ treeData, onClose }) {
                   <span className="sv-meta-chip sv-meta-chip--accent">
                     <span className="sv-meta-label">오차</span>
                     <span className="sv-meta-value">{distanceMeters.toLocaleString()}m</span>
+                  </span>
+                </>
+              )}
+              {timeline?.pano && (
+                <>
+                  <span className="sv-meta-divider" aria-hidden="true" />
+                  <span className="sv-meta-chip">
+                    <span className="sv-meta-label">로드뷰 촬영</span>
+                    <span className="sv-meta-value">{timeline.pano}</span>
+                  </span>
+                </>
+              )}
+              {timeline?.data && (
+                <>
+                  <span className="sv-meta-divider" aria-hidden="true" />
+                  <span className="sv-meta-chip">
+                    <span className="sv-meta-label">데이터 기준</span>
+                    <span className="sv-meta-value">{timeline.data}</span>
                   </span>
                 </>
               )}
@@ -457,6 +500,24 @@ export default function StreetViewModal({ treeData, onClose }) {
             </aside>
           </div>
         </div>
+
+        {(timeline?.note || roadMatch.address) && (
+          <div className="sv-cross-check">
+            {roadMatch.state === 'mismatch' && (
+              <p className="sv-cross-check-item sv-cross-check-item--warn">
+                데이터의 도로명은 <strong>{roadMatch.road}</strong>인데 로드뷰 지점의
+                주소는 <strong>{roadMatch.address}</strong>입니다.
+                등록 원본의 도로명이 실제와 다를 수 있습니다.
+              </p>
+            )}
+            {roadMatch.state !== 'mismatch' && roadMatch.address && (
+              <p className="sv-cross-check-item">
+                로드뷰 지점 주소: <strong>{roadMatch.address}</strong>
+              </p>
+            )}
+            {timeline?.note && <p className="sv-cross-check-item">{timeline.note}</p>}
+          </div>
+        )}
 
         <div className={`street-view-info-bar sv-info-bar--${infoBar.tone}`} role="status" aria-live="polite">
           <span className="sv-info-icon" aria-hidden="true">{infoBar.icon}</span>
