@@ -12,9 +12,8 @@ export default function PollenPanel({ coords }) {
   useEffect(() => {
     if (!coords) return;
     let alive = true;
-    setError(false);
     fetchPollen(coords.lat, coords.lng)
-      .then((d) => { if (alive) setData(d); })
+      .then((d) => { if (alive) { setData(d); setError(false); } })
       .catch(() => { if (alive) setError(true); });
     return () => { alive = false; };
   }, [coords]);
@@ -35,8 +34,8 @@ export default function PollenPanel({ coords }) {
           <div key={c.key} className="pollen-card">
             <span className="pollen-name">{c.label}</span>
             {c.status === 'ok' ? (
-              <span className="pollen-level" style={{ background: LEVEL_COLOR[c.level] }}>
-                {LEVEL_LABEL[c.level]}
+              <span className="pollen-level" style={{ background: LEVEL_COLOR[c.level] ?? '#ccc' }}>
+                {LEVEL_LABEL[c.level] ?? '—'}
               </span>
             ) : (
               <span className="pollen-level off">{c.status === 'offseason' ? '비시즌' : '—'}</span>
