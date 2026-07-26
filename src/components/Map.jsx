@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { getAllergenInfos, getPollenSeasonText, ALLERGEN_LEVELS } from '../data/allergenDatabase';
 import { FLAG_LABEL } from '../utils/qualityFlags';
-import { useGeolocation } from '../hooks/useGeolocation.js';
 import Legend from './Legend';
 import './Map.css';
 
@@ -95,7 +94,7 @@ function boundsIntersect(a, b) {
   );
 }
 
-export default function Map({ data, onStreetViewClick }) {
+export default function Map({ data, onStreetViewClick, geo }) {
   const mapRef = useRef(null);
   const mapInstanceRef = useRef(null);
   const markersRef = useRef([]);
@@ -110,7 +109,6 @@ export default function Map({ data, onStreetViewClick }) {
   const [gpsState, setGpsState] = useState('idle'); // idle | loading | active | error
   const [gpsError, setGpsError] = useState(null);
   const [showPermissionGuide, setShowPermissionGuide] = useState(false);
-  const geo = useGeolocation(); // 좌표 획득(1차 시도)은 훅에 위임; 마커 렌더는 Map이 소유
 
   // 위치 마커를 지도에 표시하는 공통 함수
   const placeLocationMarker = useCallback((lat, lng, accuracy, zoomTo, approximate = false) => {

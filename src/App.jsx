@@ -3,6 +3,8 @@ import Map from './components/Map';
 import StreetViewModal from './components/StreetViewModal';
 import FilterPanel from './components/FilterPanel';
 import StatsPanel from './components/StatsPanel';
+import PollenPanel from './components/PollenPanel.jsx';
+import { useGeolocation } from './hooks/useGeolocation.js';
 import { fetchAllData, loadFamousForests, loadSeoulTrees } from './services/api';
 import { getCachedData, setCachedData } from './services/cache';
 import { filterData, getUniqueCities, getUniqueSpecies, calculateStats } from './utils/helpers';
@@ -17,6 +19,7 @@ function App() {
   const [error, setError] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [streetViewTree, setStreetViewTree] = useState(null);
+  const geo = useGeolocation();
   const [filters, setFilters] = useState({
     city: '',
     species: '',
@@ -150,6 +153,7 @@ function App() {
         </aside>
 
         <main className="main-content">
+          <PollenPanel coords={geo.coords} />
           {error && (
             <div className="error-banner">
               <p>데이터 로드 실패: {error}</p>
@@ -169,7 +173,7 @@ function App() {
               </p>
             </div>
           ) : (
-            <Map data={filteredData} onStreetViewClick={setStreetViewTree} />
+            <Map data={filteredData} onStreetViewClick={setStreetViewTree} geo={geo} />
           )}
         </main>
       </div>

@@ -1,0 +1,9 @@
+.pollen-panel { display:flex; flex-direction:column; gap:6px; padding:10px 14px; background:#fff; border-bottom:1px solid #eee; }
+.pollen-panel.muted { color:#888; font-size:14px; }
+.pollen-region { font-weight:600; font-size:14px; }
+.pollen-cards { display:flex; gap:8px; flex-wrap:wrap; }
+.pollen-card { display:flex; align-items:center; gap:6px; }
+.pollen-name { font-size:13px; }
+.pollen-level { color:#fff; font-size:12px; padding:2px 8px; border-radius:10px; }
+.pollen-level.off { background:#ccc; color:#666; }
+.pollen-disclaimer { font-size:11px; color:#999; }
