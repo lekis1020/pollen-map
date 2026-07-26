@@ -15,7 +15,7 @@ export function useGeolocation() {
         setStatus('ok');
       },
       (err) => { setStatus(err.code === 1 ? 'denied' : 'error'); },
-      { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 },
+      { enableHighAccuracy: true, timeout: 12000, maximumAge: 60000 },
     );
   }, []);
 

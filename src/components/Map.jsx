@@ -269,6 +269,7 @@ export default function Map({ data, onStreetViewClick }) {
         { enableHighAccuracy: false, timeout: 25000, maximumAge: 0 }
       );
     }
+    // geo.status는 매 request()마다 'locating'을 거쳐 재진입하므로 동일 종료상태 연속에도 effect가 재발화한다. showLocation/tryIpFallback은 안정적 참조.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [geo.status]);
 
@@ -277,7 +278,7 @@ export default function Map({ data, onStreetViewClick }) {
     setGpsState('loading');
     setGpsError(null);
     geo.request();
-  }, [geo]);
+  }, [geo.request]);
 
   // GPS 현재 위치 기능
   const handleGpsClick = useCallback(async () => {
