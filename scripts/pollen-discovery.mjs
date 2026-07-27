@@ -101,31 +101,48 @@ async function googlePollen(site) {
   note(`  plantInfo codes: [${plants.join(', ')}]  → 잔디는 pollenTypeInfo code="GRASS" 권장`);
 }
 
+// 기상청 스펙(공식 Swagger에서 확정, 2026-07-27):
+//   Host: apis.data.go.kr/1360000/HealthWthrIdxServiceV3
+//   오퍼레이션(참/솔/잡초 각각 별도 호출):
+//     getOakPollenRiskIdxV3 / getPinePollenRiskIdxV3 / getWeedsPollenRiskndxV3  (잡초는 'Riskndx' 오타 주의)
+//   응답: response.body.items.item[] , item = {code, areaNo, date, today, tomorrow, dayaftertomorrow, todaysaftertomorrow}
+//     → today 가 오늘 지수값(0–3)
+//   ⚠️ 키는 유효해도 이 서비스에 '활용신청' 승인이 없으면 Forbidden. 데이터셋 15085289 활용신청 필요.
+const KMA_BASE = 'https://apis.data.go.kr/1360000/HealthWthrIdxServiceV3';
+const KMA_OPS = {
+  oak: 'getOakPollenRiskIdxV3',
+  pine: 'getPinePollenRiskIdxV3',
+  weed: 'getWeedsPollenRiskndxV3',
+};
+
 async function kmaPollen(areaNo) {
   const key = need('KMA_POLLEN_KEY');
-  // ⚠️ 엔드포인트/파라미터는 공식 ZIP에서 확정. 아래는 best-guess이며,
-  //    KMA_ENDPOINT / KMA_AREA_NO env로 재정의 가능. 실패해도 raw를 저장해 구조를 확인한다.
-  const base = env.KMA_ENDPOINT
-    || 'https://apis.data.go.kr/1360000/PollenRiskFrcstInfoService/getOakPollenRiskFrcstInfo';
   const area = env.KMA_AREA_NO || areaNo || '1168000000';
-  const url = new URL(base);
-  url.searchParams.set('serviceKey', key);
-  url.searchParams.set('areaNo', area);
-  url.searchParams.set('time', `${kstYmd()}06`);
-  url.searchParams.set('dataType', 'JSON');
-  url.searchParams.set('pageNo', '1');
-  url.searchParams.set('numOfRows', '10');
-  let raw, parsed;
-  try {
-    const res = await fetch(url);
-    raw = await res.text();
-    try { parsed = JSON.parse(raw); } catch { parsed = { _nonJson: raw.slice(0, 2000) }; }
-    save('kma-oak-inseason.json', parsed);
-    note(`- KMA (areaNo=${area}): status ${res.status}. 응답을 kma-oak-inseason.json에서 직접 확인하세요.`);
-    note(`  ⚠️ 참/솔/잡초가 별도 오퍼레이션인지, today/tomorrow 필드명, 비시즌 신호를 이 응답으로 확정.`);
-  } catch (e) {
-    note(`- KMA 호출 실패: ${e.message}. KMA_ENDPOINT/KMA_AREA_NO env로 엔드포인트를 지정해 재시도하세요.`);
+  for (const [kind, op] of Object.entries(KMA_OPS)) {
+    const url = new URL(`${KMA_BASE}/${op}`);
+    url.searchParams.set('serviceKey', key);
+    url.searchParams.set('areaNo', area);
+    url.searchParams.set('time', `${kstYmd()}06`);
+    url.searchParams.set('dataType', 'JSON');
+    url.searchParams.set('pageNo', '1');
+    url.searchParams.set('numOfRows', '10');
+    try {
+      const res = await fetch(url);
+      const raw = await res.text();
+      let parsed;
+      try { parsed = JSON.parse(raw); } catch { parsed = { _nonJson: raw.slice(0, 2000) }; }
+      save(`kma-${kind}.json`, parsed);
+      const item = parsed?.response?.body?.items?.item;
+      const today = Array.isArray(item) ? item[0]?.today : item?.today;
+      note(`- KMA ${kind} (${op}, areaNo=${area}): status ${res.status}, today=${today ?? 'n/a'}`);
+      if (raw.startsWith('Forbidden') || /NOT_REGISTERED/.test(raw)) {
+        note(`  ⚠️ 활용신청 미승인으로 보입니다 — data.go.kr 데이터셋 15085289 활용신청 필요.`);
+      }
+    } catch (e) {
+      note(`- KMA ${kind} 호출 실패: ${e.message}`);
+    }
   }
+  note(`  ※ 비시즌 신호(today 빈값/누락 여부)를 위 응답으로 확정해 parseKma에 반영.`);
 }
 
 async function main() {
