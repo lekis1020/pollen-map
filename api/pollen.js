@@ -74,6 +74,7 @@ export default async function handler(req, res) {
   const { area1, area2 } = parseNaverGc(gc);
   const { regionCode, region } = lookupRegionCode(area1, area2);
   if (!regionCode) {
+    res.setHeader('Cache-Control', 's-maxage=1800');
     return res.status(200).json({ region, regionCode: null, categories: [], status: 'unmapped' });
   }
 
