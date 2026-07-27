@@ -57,9 +57,11 @@ export default async function handler(req, res) {
 
   const limiter = getLimiter();
   if (limiter) {
-    const ip = (req.headers['x-forwarded-for'] || 'unknown').split(',')[0].trim();
-    const { success } = await limiter.limit(ip);
-    if (!success) return res.status(429).json({ error: 'too many requests' });
+    try {
+      const ip = (req.headers['x-forwarded-for'] || 'unknown').split(',')[0].trim();
+      const { success } = await limiter.limit(ip);
+      if (!success) return res.status(429).json({ error: 'too many requests' });
+    } catch { /* fail-open: skip rate limiting if Redis is down */ }
   }
 
   const sLat = snapCoord(lat), sLng = snapCoord(lng);

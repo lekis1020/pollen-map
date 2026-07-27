@@ -156,3 +156,27 @@ describe('/api/pollen 회복탄력성 (redis fail-open / 병합 / naver 실패)'
     expect(res.statusCode).toBe(502);
   });
 });
+
+describe('/api/pollen 레이트리밋 fail-open', () => {
+  const koreaReq = (overrides = {}) => req({ lat: '37.4979', lng: '127.0276', ...overrides });
+
+  it('limiter.limit()이 throw해도 매핑된 지역 요청은 200 (fail-open)', async () => {
+    vi.doMock('./_lib/ratelimit.js', () => ({
+      getLimiter: () => ({ limit: async () => { throw new Error('redis down'); } }),
+    }));
+    vi.resetModules();
+
+    vi.stubGlobal('fetch', mockFetchWithMappedRegion());
+
+    const { default: handler } = await import('./pollen.js');
+    const res = mockRes();
+    await handler(koreaReq(), res);
+
+    expect(res.statusCode).toBe(200);
+    const keys = res.body.categories.map((c) => c.key);
+    expect(keys).toEqual(expect.arrayContaining(['oak', 'pine', 'weed', 'grass']));
+
+    vi.doUnmock('./_lib/ratelimit.js');
+    vi.resetModules();
+  });
+});

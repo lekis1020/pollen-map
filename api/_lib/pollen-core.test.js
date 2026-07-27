@@ -55,6 +55,14 @@ describe('parseKmaItem', () => {
   it('아이템 없음 → level null, status error', () => {
     expect(parseKmaItem({})).toEqual({ level: null, status: 'error' });
   });
+  it('today:"2" → level 2 (변경 없음)', () => {
+    expect(parseKmaItem({ response: { body: { items: { item: { today: '2' } } } } }))
+      .toEqual({ level: 2, status: 'ok' });
+  });
+  it('today:"1.5" → level 2 (반올림)', () => {
+    expect(parseKmaItem({ response: { body: { items: { item: { today: '1.5' } } } } }))
+      .toEqual({ level: 2, status: 'ok' });
+  });
 });
 
 describe('parseGoogleGrass', () => {

@@ -34,7 +34,7 @@ export function parseKmaItem(kmaJson) {
   }
   const n = Number(today);
   if (Number.isNaN(n)) return { level: null, status: 'error' };
-  return { level: Math.max(0, Math.min(3, n)), status: 'ok' };
+  return { level: Math.round(Math.max(0, Math.min(3, n))), status: 'ok' };
 }
 
 export function parseGoogleGrass(googleJson) {
