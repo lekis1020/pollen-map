@@ -1,0 +1,13 @@
+{
+  "status": { "code": 0, "name": "ok", "message": "done" },
+  "results": [
+    { "name": "admcode",
+      "region": {
+        "area0": { "name": "kr" },
+        "area1": { "name": "서울특별시" },
+        "area2": { "name": "강남구" },
+        "area3": { "name": "역삼동" },
+        "area4": { "name": "" }
+      } }
+  ]
+}

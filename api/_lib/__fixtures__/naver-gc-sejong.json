@@ -1,0 +1,13 @@
+{
+  "status": { "code": 0, "name": "ok", "message": "done" },
+  "results": [
+    { "name": "admcode",
+      "region": {
+        "area0": { "name": "kr" },
+        "area1": { "name": "세종특별자치시" },
+        "area2": { "name": "" },
+        "area3": { "name": "한솔동" },
+        "area4": { "name": "" }
+      } }
+  ]
+}
