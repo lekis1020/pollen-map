@@ -13,6 +13,7 @@ import kmaOakInseason from './__fixtures__/kma-oak-inseason.json';
 import kmaPineInseason from './__fixtures__/kma-pine-inseason.json';
 import kmaOffseason from './__fixtures__/kma-offseason.json';
 import googleGrass from './__fixtures__/google-grass.json';
+import googleGrassOffseason from './__fixtures__/google-grass-offseason.json';
 
 describe('upiToLevel', () => {
   it.each([[0,0],[1,0],[2,1],[3,1],[4,2],[5,3]])('UPI %i → %i', (u, l) => {
@@ -49,8 +50,16 @@ describe('parseKmaItem', () => {
   it('시즌 중 참나무 → level 2, status ok', () => {
     expect(parseKmaItem(kmaOakInseason)).toEqual({ level: 2, status: 'ok' });
   });
-  it('비시즌 → level null, status offseason', () => {
+  it('비시즌(실응답: body 없음 + resultCode 99) → level null, status offseason', () => {
     expect(parseKmaItem(kmaOffseason)).toEqual({ level: null, status: 'offseason' });
+  });
+  it('시즌 중 today 빈값 → status offseason', () => {
+    expect(parseKmaItem({ response: { body: { items: { item: { today: '' } } } } }))
+      .toEqual({ level: null, status: 'offseason' });
+  });
+  it('resultCode 99라도 제공기간 메시지가 아니면 error', () => {
+    expect(parseKmaItem({ response: { header: { resultCode: '99', resultMsg: 'APPLICATION ERROR' } } }))
+      .toEqual({ level: null, status: 'error' });
   });
   it('아이템 없음 → level null, status error', () => {
     expect(parseKmaItem({})).toEqual({ level: null, status: 'error' });
@@ -76,6 +85,9 @@ describe('parseGoogleGrass', () => {
   it('GRASS는 있으나 indexInfo 없음 → status offseason', () => {
     const noIndex = { dailyInfo: [{ pollenTypeInfo: [{ code: 'GRASS', inSeason: false }] }] };
     expect(parseGoogleGrass(noIndex)).toEqual({ level: null, status: 'offseason' });
+  });
+  it('비시즌 실응답(2026-07-29 캡처: indexInfo·inSeason 자체 없음) → status offseason', () => {
+    expect(parseGoogleGrass(googleGrassOffseason)).toEqual({ level: null, status: 'offseason' });
   });
 });
 

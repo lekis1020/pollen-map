@@ -1,13 +1,131 @@
 {
-  "status": { "code": 0, "name": "ok", "message": "done" },
+  "status": {
+    "code": 0,
+    "name": "ok",
+    "message": "done"
+  },
   "results": [
-    { "name": "admcode",
+    {
+      "name": "admcode",
+      "code": {
+        "id": "3611056000",
+        "type": "S",
+        "mappingId": "17110103"
+      },
       "region": {
-        "area0": { "name": "kr" },
-        "area1": { "name": "세종특별자치시" },
-        "area2": { "name": "" },
-        "area3": { "name": "한솔동" },
-        "area4": { "name": "" }
-      } }
+        "area0": {
+          "name": "kr",
+          "coords": {
+            "center": {
+              "crs": "",
+              "x": 0,
+              "y": 0
+            }
+          }
+        },
+        "area1": {
+          "name": "세종특별자치시",
+          "coords": {
+            "center": {
+              "crs": "EPSG:4326",
+              "x": 127.289433,
+              "y": 36.480351
+            }
+          },
+          "alias": "세종"
+        },
+        "area2": {
+          "name": "",
+          "coords": {
+            "center": {
+              "crs": "",
+              "x": 0,
+              "y": 0
+            }
+          }
+        },
+        "area3": {
+          "name": "보람동",
+          "coords": {
+            "center": {
+              "crs": "EPSG:4326",
+              "x": 127.290643,
+              "y": 36.478916
+            }
+          }
+        },
+        "area4": {
+          "name": "",
+          "coords": {
+            "center": {
+              "crs": "",
+              "x": 0,
+              "y": 0
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "legalcode",
+      "code": {
+        "id": "3611010300",
+        "type": "L",
+        "mappingId": "17110103"
+      },
+      "region": {
+        "area0": {
+          "name": "kr",
+          "coords": {
+            "center": {
+              "crs": "",
+              "x": 0,
+              "y": 0
+            }
+          }
+        },
+        "area1": {
+          "name": "세종특별자치시",
+          "coords": {
+            "center": {
+              "crs": "EPSG:4326",
+              "x": 127.289433,
+              "y": 36.480351
+            }
+          },
+          "alias": "세종"
+        },
+        "area2": {
+          "name": "",
+          "coords": {
+            "center": {
+              "crs": "",
+              "x": 0,
+              "y": 0
+            }
+          }
+        },
+        "area3": {
+          "name": "보람동",
+          "coords": {
+            "center": {
+              "crs": "EPSG:4326",
+              "x": 127.290643,
+              "y": 36.478916
+            }
+          }
+        },
+        "area4": {
+          "name": "",
+          "coords": {
+            "center": {
+              "crs": "",
+              "x": 0,
+              "y": 0
+            }
+          }
+        }
+      }
+    }
   ]
 }

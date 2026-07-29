@@ -26,7 +26,14 @@ export function cacheKey(regionCode, kstDateStr) {
 export function parseKmaItem(kmaJson) {
   const items = kmaJson?.response?.body?.items?.item;
   const item = Array.isArray(items) ? items[0] : items;
-  if (item == null) return { level: null, status: 'error' };
+  if (item == null) {
+    // 비시즌엔 body 없이 header.resultCode "99" + "해당지수자료 제공기간이 아닙니다!"만 온다 (2026-07-28 실응답).
+    const header = kmaJson?.response?.header;
+    if (header?.resultCode === '99' && /제공기간/.test(header?.resultMsg ?? '')) {
+      return { level: null, status: 'offseason' };
+    }
+    return { level: null, status: 'error' };
+  }
 
   const today = item.today;
   if (today === '' || today === '-' || today == null) {
