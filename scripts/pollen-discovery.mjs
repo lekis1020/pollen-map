@@ -23,7 +23,8 @@ import { fileURLToPath } from 'node:url';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '..');
 const FIXTURES = join(ROOT, 'api/_lib/__fixtures__');
-const NOTES = join(ROOT, 'docs/superpowers/notes/pollen-api-discovery.md');
+// 확정 스펙 문서(pollen-api-discovery.md)를 덮어쓰지 않도록 실행 로그는 별도 파일에 남긴다.
+const NOTES = join(ROOT, 'docs/superpowers/notes/pollen-discovery-run.md');
 
 // .env 로드 (기존 스크립트와 동일한 방식)
 function loadEnv() {
@@ -44,8 +45,9 @@ const need = (k) => {
 };
 
 // 테스트 좌표: 강남(area2 있음), 세종(area2 없음)
+// 주의: 강남역 사거리(127.0276,37.4979)는 실제로는 서초구 → 강남구청 좌표 사용.
 const SITES = {
-  gangnam: { lat: 37.4979, lng: 127.0276 },
+  gangnam: { lat: 37.5172, lng: 127.0473 },
   sejong: { lat: 36.48, lng: 127.289 },
 };
 
@@ -93,7 +95,8 @@ async function googlePollen(site) {
   url.searchParams.set('key', key);
   const res = await fetch(url);
   const json = await res.json();
-  save('google-grass.json', json);
+  // google-grass.json은 테스트 fixture(시즌 중 가정)라 덮어쓰지 않는다 — 실행 캡처는 -live로 저장.
+  save('google-grass-live.json', json);
   const day = json?.dailyInfo?.[0] ?? {};
   const types = (day.pollenTypeInfo || []).map((t) => `${t.code}=${t.indexInfo?.value ?? 'n/a'}`);
   const plants = (day.plantInfo || []).map((p) => p.code);
@@ -131,7 +134,7 @@ async function kmaPollen(areaNo) {
       const raw = await res.text();
       let parsed;
       try { parsed = JSON.parse(raw); } catch { parsed = { _nonJson: raw.slice(0, 2000) }; }
-      save(`kma-${kind}.json`, parsed);
+      save(`kma-${kind}-live.json`, parsed);
       const item = parsed?.response?.body?.items?.item;
       const today = Array.isArray(item) ? item[0]?.today : item?.today;
       note(`- KMA ${kind} (${op}, areaNo=${area}): status ${res.status}, today=${today ?? 'n/a'}`);
@@ -149,15 +152,27 @@ async function main() {
   note(`# 꽃가루 API 디스커버리 결과 (${kstYmd()} KST)`);
   note('');
   note('## Naver Reverse Geocoding');
-  const gangnam = await naverGc(SITES.gangnam, 'gangnam');
-  await naverGc(SITES.sejong, 'sejong');
+  try {
+    await naverGc(SITES.gangnam, 'gangnam');
+    await naverGc(SITES.sejong, 'sejong');
+  } catch (e) {
+    note(`- 건너뜀: ${e.message}`);
+  }
   note('');
   note('## Google Pollen (grass)');
-  await googlePollen(SITES.gangnam);
+  try {
+    await googlePollen(SITES.gangnam);
+  } catch (e) {
+    note(`- 건너뜀: ${e.message}`);
+  }
   note('');
   note('## 기상청 꽃가루농도위험지수 3.0');
   note('  ※ 공식 ZIP(설명서 + 행정구역코드)을 받아 정확한 엔드포인트/areaNo/응답필드를 확정하세요.');
-  await kmaPollen();
+  try {
+    await kmaPollen();
+  } catch (e) {
+    note(`- 건너뜀: ${e.message}`);
+  }
   note('');
   note('## 다음 단계');
   note('- 위 fixture로 Task 3(parseKma/parseGoogleGrass) 필드 경로를 확정.');
