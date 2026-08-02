@@ -6,10 +6,10 @@ export const DATA_SOURCES = {
     id: 'streetTree',
     label: '가로수길',
     description: '전국가로수길정보표준데이터',
-    apiPath: 'tn_pubr_public_sttree_stret_api',
+    apiPath: 'tn_pubr_public_sttree_stret_api', // 스냅샷 생성 스크립트가 호출하는 원본 API
     color: '#27ae60',
     icon: 'circle',
-    enabled: true,
+    enabled: true, // 정적 스냅샷(/data/sttree-roads.json)으로 로드 — 2026-08부터 브라우저 직접 호출은 데이터포털이 403 차단
   },
   seoulTree: {
     id: 'seoulTree',
