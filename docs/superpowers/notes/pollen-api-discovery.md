@@ -11,7 +11,7 @@ Phase 0 산출물. 값이 확정된 것과 활용신청/키 발급 후 실호출
   - 잡초류: `getWeedsPollenRiskndxV3`  ← 이름에 오타(`Riskndx`), 그대로 사용
 - **요청 파라미터**: `serviceKey`, `areaNo`(10자리 행정구역코드), `time`(YYYYMMDDHH, 06 또는 18), `dataType`(JSON), `pageNo`, `numOfRows`
 - **응답 구조**: `response.body.items.item[]`
-  - item 필드: `code`, `areaNo`, `date`, `today`, `tomorrow`, `dayaftertomorrow`, `todaysaftertomorrow`
+  - item 필드: `code`, `areaNo`, `date`, `today`, `tomorrow`, `dayaftertomorrow`, `twodaysaftertomorrow`
   - **`today` = 오늘 지수값(0–3)** → parseKma는 각 오퍼레이션의 `item[0].today`를 읽는다.
 - **인증 상태**: ✅ **활용신청 승인 완료(2026-07-28, 자동승인)** → 전용 `KMA_POLLEN_KEY` 발급(.env).
   발급 직후 약 5분간 게이트웨이 미전파로 403(Forbidden) → 이후 200. (기존 `VITE_DATA_API_KEY`는 이 서비스에 Forbidden.)
@@ -22,7 +22,9 @@ Phase 0 산출물. 값이 확정된 것과 활용신청/키 발급 후 실호출
   - 참나무·소나무 3~6월, 잡초류 8~10월(resultMsg 기준. 첨부 docx에는 4~6월로 표기 — API 메시지가 우선).
   - `parseKmaItem`: `resultCode "99"` + resultMsg에 "제공기간" 포함 → `offseason`. 그 외 item 없음 → `error`.
   - 실응답 fixture: `kma-oak/pine/weed.json`(전부 비시즌), `kma-offseason.json`(동일 실응답으로 교체).
-- **시즌 중 응답 형식(값 문자열/숫자 등)**: 3월 시즌 개시 후 재확인 필요(현재 fixture `kma-oak-inseason.json`은 가정 기반).
+- **시즌 중 응답 — ✅ 잡초류 실호출로 확정(2026-08-02, 시즌 개시)**: `today:"0"`(문자열 숫자), `resultCode:"00"`.
+  마지막 필드명은 Swagger 표기(`todaysaftertomorrow`)와 달리 실제로는 **`twodaysaftertomorrow`**(우리는 `today`만 읽어 영향 없음).
+  실응답 fixture: `kma-weed-inseason.json`. 참나무·소나무는 3월 시즌 개시 후 동일 형식인지 확인(현 oak/pine inseason fixture는 가정 기반).
 
 ## Google Pollen API — ✅ 문서에서 확정
 

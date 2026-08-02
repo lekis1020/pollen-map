@@ -5,7 +5,7 @@
       "dataType": "JSON",
       "items": { "item": [
         { "code": "A07_2", "areaNo": "1168000000", "date": "2026042706",
-          "today": "2", "tomorrow": "1", "dayaftertomorrow": "1", "todaysaftertomorrow": "0" }
+          "today": "2", "tomorrow": "1", "dayaftertomorrow": "1", "twodaysaftertomorrow": "0" }
       ] },
       "pageNo": 1, "numOfRows": 10, "totalCount": 1
     }

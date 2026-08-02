@@ -10,6 +10,7 @@ import {
   buildResponse,
 } from './pollen-core.js';
 import kmaOakInseason from './__fixtures__/kma-oak-inseason.json';
+import kmaWeedInseason from './__fixtures__/kma-weed-inseason.json';
 import kmaPineInseason from './__fixtures__/kma-pine-inseason.json';
 import kmaOffseason from './__fixtures__/kma-offseason.json';
 import googleGrass from './__fixtures__/google-grass.json';
@@ -49,6 +50,9 @@ describe('cacheKey', () => {
 describe('parseKmaItem', () => {
   it('시즌 중 참나무 → level 2, status ok', () => {
     expect(parseKmaItem(kmaOakInseason)).toEqual({ level: 2, status: 'ok' });
+  });
+  it('시즌 중 잡초류 실응답(2026-08-02 캡처, today:"0") → level 0, status ok', () => {
+    expect(parseKmaItem(kmaWeedInseason)).toEqual({ level: 0, status: 'ok' });
   });
   it('비시즌(실응답: body 없음 + resultCode 99) → level null, status offseason', () => {
     expect(parseKmaItem(kmaOffseason)).toEqual({ level: null, status: 'offseason' });
