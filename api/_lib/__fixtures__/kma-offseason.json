@@ -1,0 +1,8 @@
+{
+  "response": {
+    "header": {
+      "resultCode": "99",
+      "resultMsg": "해당지수자료 제공기간이 아닙니다! [자료제공기간 3월 ~ 6월]"
+    }
+  }
+}

@@ -31,3 +31,7 @@ dist-ssr
 # OMC 세션 상태 및 테스트 아티팩트
 .omc/
 test-results/
+
+# discover:pollen 실행 캡처 (테스트 fixture 아님)
+api/_lib/__fixtures__/*-live.json
+docs/superpowers/notes/pollen-discovery-run.md

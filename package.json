@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:api": "vercel dev",
     "build": "vite build",
     "lint": "eslint .",
     "test": "vitest run",
@@ -12,14 +13,19 @@
     "data:forests": "node scripts/fetch-famous-forests.mjs",
     "geocode:forests": "node scripts/geocode-famous-forests.mjs",
     "audit:data": "node scripts/audit-data.mjs",
+    "discover:pollen": "node scripts/pollen-discovery.mjs",
     "preview": "vite preview"
   },
   "dependencies": {
+    "@upstash/ratelimit": "^2.0.8",
+    "@upstash/redis": "^1.38.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",
+    "@testing-library/jest-dom": "^7.0.0",
+    "@testing-library/react": "^16.3.2",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.1",
@@ -27,6 +33,8 @@
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.5.2",
     "globals": "^17.4.0",
+    "jsdom": "^29.1.1",
+    "vercel": "^57.0.0",
     "vite": "^8.0.1",
     "vitest": "^4.1.10"
   }

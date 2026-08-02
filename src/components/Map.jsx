@@ -94,7 +94,7 @@ function boundsIntersect(a, b) {
   );
 }
 
-export default function Map({ data, onStreetViewClick }) {
+export default function Map({ data, onStreetViewClick, geo }) {
   const mapRef = useRef(null);
   const mapInstanceRef = useRef(null);
   const markersRef = useRef([]);
@@ -228,59 +228,55 @@ export default function Map({ data, onStreetViewClick }) {
   // 권한 변경 감지 리스너 해제용
   const permissionListenerRef = useRef(null);
 
-  // 실제 위치 요청 — 고정밀도 → 저정밀도 재시도
+  // 훅의 1차(고정밀도) 시도 결과 반영 — 성공 시 마커 표시, 실패 시 저정밀도 재시도 → IP fallback
+  useEffect(() => {
+    if (geo.status === 'ok' && geo.coords) {
+      showLocation({ coords: { latitude: geo.coords.lat, longitude: geo.coords.lng, accuracy: geo.accuracy } });
+      return;
+    }
+    if (geo.status === 'denied') {
+      setGpsState('error');
+      setShowPermissionGuide(true);
+      setTimeout(() => setGpsState('idle'), 300);
+      return;
+    }
+    if (geo.status === 'error') {
+      // 훅의 1차 시도(고정밀도)가 실패(권한거부 제외) — OS/네트워크 기반 측위가 느린 경우
+      // (특히 macOS CoreLocation cold-start) 저정밀도로 재시도
+      navigator.geolocation.getCurrentPosition(
+        showLocation,
+        async (retryErr) => {
+          if (retryErr.code === 1) {
+            setGpsState('error');
+            setShowPermissionGuide(true);
+            setTimeout(() => setGpsState('idle'), 300);
+            return;
+          }
+          // 두 번째 재시도도 실패 → IP 기반 대략 위치 fallback
+          const ok = await tryIpFallback();
+          if (!ok) {
+            setGpsState('error');
+            if (retryErr.code === 2) {
+              setGpsError('위치 서비스를 사용할 수 없습니다. 기기의 위치 서비스가 켜져 있는지 확인해 주세요.');
+            } else {
+              setGpsError('위치 확인이 오래 걸립니다. 잠시 후 다시 시도해 주세요.');
+            }
+            setTimeout(() => { setGpsState('idle'); setGpsError(null); }, 5000);
+          }
+        },
+        { enableHighAccuracy: false, timeout: 25000, maximumAge: 0 }
+      );
+    }
+    // geo.status는 매 request()마다 'locating'을 거쳐 재진입하므로 동일 종료상태 연속에도 effect가 재발화한다. showLocation/tryIpFallback은 안정적 참조.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [geo.status]);
+
+  // 실제 위치 요청 — 좌표 획득(1차 고정밀도 시도)은 useGeolocation 훅에 위임
   const performGeolocation = useCallback(() => {
     setGpsState('loading');
     setGpsError(null);
-
-    navigator.geolocation.getCurrentPosition(
-      showLocation,
-      (err) => {
-        if (err.code === 1) {
-          setGpsState('error');
-          setShowPermissionGuide(true);
-          setTimeout(() => setGpsState('idle'), 300);
-          return;
-        }
-        if (err.code === 2 || err.code === 3) {
-          // OS/네트워크 기반 측위가 느린 경우(특히 macOS CoreLocation cold-start) 저정밀도로 재시도
-          navigator.geolocation.getCurrentPosition(
-            showLocation,
-            async (retryErr) => {
-              if (retryErr.code === 1) {
-                setGpsState('error');
-                setShowPermissionGuide(true);
-                setTimeout(() => setGpsState('idle'), 300);
-                return;
-              }
-              // 두 번째 재시도도 실패 → IP 기반 대략 위치 fallback
-              const ok = await tryIpFallback();
-              if (!ok) {
-                setGpsState('error');
-                if (retryErr.code === 2) {
-                  setGpsError('위치 서비스를 사용할 수 없습니다. 기기의 위치 서비스가 켜져 있는지 확인해 주세요.');
-                } else {
-                  setGpsError('위치 확인이 오래 걸립니다. 잠시 후 다시 시도해 주세요.');
-                }
-                setTimeout(() => { setGpsState('idle'); setGpsError(null); }, 5000);
-              }
-            },
-            { enableHighAccuracy: false, timeout: 25000, maximumAge: 0 }
-          );
-          return;
-        }
-        // 기타 알 수 없는 코드 — IP fallback 시도 후 안내
-        tryIpFallback().then((ok) => {
-          if (!ok) {
-            setGpsState('error');
-            setGpsError('위치를 가져올 수 없습니다.');
-            setTimeout(() => { setGpsState('idle'); setGpsError(null); }, 4000);
-          }
-        });
-      },
-      { enableHighAccuracy: true, timeout: 12000, maximumAge: 60000 }
-    );
-  }, [showLocation, tryIpFallback]);
+    geo.request();
+  }, [geo.request]);
 
   // GPS 현재 위치 기능
   const handleGpsClick = useCallback(async () => {
