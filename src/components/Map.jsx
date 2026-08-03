@@ -60,18 +60,34 @@ function buildAllergenRows(item, { withSymptoms = true } = {}) {
 
 // 품질 플래그가 있으면 근거와 함께 경고 블록을 만든다.
 // 원본을 고칠 권한이 없으므로, 고치는 대신 무엇이 의심스러운지 밝힌다.
+// 교정 방식마다 남는 오차가 달라서 문구를 나눈다.
+// 실제보다 정확한 것처럼 읽히는 문구를 쓰면 안 된다.
+const CORRECTION_NOTE = {
+  'single-digit-repair':
+    '좌표에 한 자리 오타가 있어 보정해 표시했습니다.',
+  'roadname-geocode:parcel':
+    '좌표가 등록 기관의 관할 밖이라, 원본 구간설명의 지번 주소를 다시 찾아 표시했습니다.',
+  'roadname-geocode:road':
+    '좌표가 등록 기관의 관할 밖이라, 원본 도로명을 다시 찾아 표시했습니다. '
+    + '도로 대표점이라 구간 안에서 수백 m 어긋날 수 있습니다.',
+  'roadname-geocode:dong':
+    '좌표가 등록 기관의 관할 밖이라, 원본에 적힌 법정동으로 다시 찾아 표시했습니다. '
+    + '동 중심점이라 1km 내외 오차가 있을 수 있습니다.',
+};
+
 function buildQualityNote(item) {
   const flags = item.qualityFlags || [];
-  const corrected = item.coordCorrected;
-  if (!flags.length && !corrected) return '';
+  const correction = item.coordCorrection;
+  if (!flags.length && !correction) return '';
 
   let inner = '';
   if (flags.length) {
     const lines = flags.map((f) => `<li>${escapeHtml(FLAG_LABEL[f] || f)}</li>`).join('');
     inner += `<strong>이 기록에서 확인된 문제</strong><ul>${lines}</ul>`;
   }
-  if (corrected) {
-    inner += '<p class="popup-quality-fixed">좌표에 한 자리 오타가 있어 보정해 표시했습니다.</p>';
+  if (correction) {
+    const note = CORRECTION_NOTE[correction.method] || '좌표를 보정해 표시했습니다.';
+    inner += `<p class="popup-quality-fixed">${escapeHtml(note)}</p>`;
   }
   return `<div class="popup-quality-note">${inner}</div>`;
 }
