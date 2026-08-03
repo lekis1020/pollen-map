@@ -46,11 +46,14 @@ function parseCSV(text) {
   return records;
 }
 
+// 공백으로 쪼개면 안 된다. 원본 CSV에는 "한계령 풀", "도깨비 부채"처럼
+// 두 어절로 적힌 종명이 있어서 공백 분해가 없는 종을 만들어낸다.
+// 구분자는 쉼표·슬래시뿐이고, 어절 내부 공백은 보존한 뒤 압축만 한다.
 function normalizeSpecies(raw) {
   if (!raw) return '';
   return raw
-    .split(/[,\s/]+/)
-    .map(s => s.trim())
+    .split(/[,/]+/)
+    .map((s) => s.trim().replace(/\s+/g, ' '))
     .filter(Boolean)
     .join(', ');
 }

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-15T08:12:26.352Z",
+  "generatedAt": "2026-08-03T02:48:22.939Z",
   "source": "산림청_국유림 명품숲 선정 현황_20230913 (data.go.kr 15038042)",
   "total": 50,
   "items": [
@@ -21,7 +21,7 @@
       "longitude": 127.670106,
       "hasCoords": true,
       "matchedAddress": "경기도 양평군 지평면 무왕리 산143",
-      "geocodedAt": "2026-07-15T08:04:17.403Z"
+      "geocodedAt": "2026-08-03T02:48:12.414Z"
     },
     {
       "id": "famousForest_1",
@@ -41,7 +41,7 @@
       "longitude": 127.8646686,
       "hasCoords": true,
       "matchedAddress": "강원특별자치도 홍천군 화촌면 상평길 34-8",
-      "geocodedAt": "2026-07-15T08:04:17.586Z"
+      "geocodedAt": "2026-08-03T02:48:12.593Z"
     },
     {
       "id": "famousForest_2",
@@ -61,7 +61,7 @@
       "longitude": 128.7957792,
       "hasCoords": true,
       "matchedAddress": "강원특별자치도 강릉시 성산면 어흘리 524",
-      "geocodedAt": "2026-07-15T08:04:17.805Z"
+      "geocodedAt": "2026-08-03T02:48:12.805Z"
     },
     {
       "id": "famousForest_3",
@@ -72,16 +72,16 @@
       "year": "2017",
       "address": "경북 봉화군 소천면 고선리 산37 외 1",
       "navigationAddress": "",
-      "species": "물푸레, 외, 12종",
+      "species": "물푸레 외 12종",
       "areaHa": 177,
       "management": "남부지방산림청 영주국유림관리소",
       "contact": "054-630-4033",
       "note": "2014년 아름다운 숲 전국대회 숲길부문 우수상 수상",
-      "latitude": 37.0180306,
-      "longitude": 128.9555289,
+      "latitude": 37.0180307,
+      "longitude": 128.9555288,
       "hasCoords": true,
       "matchedAddress": "경상북도 봉화군 소천면 청옥로 1261-32 금강소나무생태경영림안내소",
-      "geocodedAt": "2026-07-15T08:04:18.006Z"
+      "geocodedAt": "2026-08-03T02:48:12.993Z"
     },
     {
       "id": "famousForest_4",
@@ -97,11 +97,11 @@
       "management": "남부지방산림청 영주국유림관리소",
       "contact": "054-781-1201",
       "note": "임도에서 전망 양호, 국립백두대간수목원 인근",
-      "latitude": 37.0396575,
+      "latitude": 37.0396573,
       "longitude": 128.7742956,
       "hasCoords": true,
       "matchedAddress": "경상북도 봉화군 춘양면 우구치리 산1-1",
-      "geocodedAt": "2026-07-15T08:04:18.201Z"
+      "geocodedAt": "2026-08-03T02:48:13.182Z"
     },
     {
       "id": "famousForest_5",
@@ -117,11 +117,11 @@
       "management": "남부지방산림청 울진국유림관리소",
       "contact": "043-850-0331",
       "note": "숲길탐방로 7개소 79km, 산림유전자원보호구역",
-      "latitude": 37.012975,
-      "longitude": 129.1895671,
+      "latitude": 37.0129754,
+      "longitude": 129.1895661,
       "hasCoords": true,
       "matchedAddress": "경상북도 울진군 금강송면 대광천길 81 금강소나무관리사",
-      "geocodedAt": "2026-07-15T08:04:18.412Z"
+      "geocodedAt": "2026-08-03T02:48:13.395Z"
     },
     {
       "id": "famousForest_6",
@@ -132,7 +132,7 @@
       "year": "2017",
       "address": "충북 음성군 감곡면 사곡리 산57-1",
       "navigationAddress": "충북 음성군 감곡면 사곡리 540(자작나무 숲 입구)",
-      "species": "자작·낙엽송, 등",
+      "species": "자작·낙엽송 등",
       "areaHa": 60.5,
       "management": "중부지방산림청 충주국유림관리소",
       "contact": "043-420-0341",
@@ -141,7 +141,7 @@
       "longitude": 127.6671641,
       "hasCoords": true,
       "matchedAddress": "충청북도 음성군 감곡면 사곡리 540",
-      "geocodedAt": "2026-07-15T08:04:18.609Z"
+      "geocodedAt": "2026-08-03T02:48:13.587Z"
     },
     {
       "id": "famousForest_7",
@@ -161,7 +161,7 @@
       "longitude": 128.4358836,
       "hasCoords": true,
       "matchedAddress": "충청북도 단양군 대강면 죽령로 2152",
-      "geocodedAt": "2026-07-15T08:04:18.823Z"
+      "geocodedAt": "2026-08-03T02:48:13.794Z"
     },
     {
       "id": "famousForest_8",
@@ -181,7 +181,7 @@
       "longitude": 127.7759751,
       "hasCoords": true,
       "matchedAddress": "전북특별자치도 무주군 설천면 삼공리 산109",
-      "geocodedAt": "2026-07-15T08:04:19.010Z"
+      "geocodedAt": "2026-08-03T02:48:13.994Z"
     },
     {
       "id": "famousForest_9",
@@ -198,10 +198,10 @@
       "contact": "033-439-5542",
       "note": "서기산 경제림육성단지",
       "latitude": 34.6389022,
-      "longitude": 126.6988455,
+      "longitude": 126.6988456,
       "hasCoords": true,
       "matchedAddress": "전남광주통합특별시 강진군 강진읍 서산리 산183",
-      "geocodedAt": "2026-07-15T08:04:19.216Z"
+      "geocodedAt": "2026-08-03T02:48:14.179Z"
     },
     {
       "id": "famousForest_10",
@@ -221,7 +221,7 @@
       "longitude": 128.2506189,
       "hasCoords": true,
       "matchedAddress": "강원특별자치도 횡성군 안흥면 상안리 산90-1",
-      "geocodedAt": "2026-07-15T08:04:19.386Z"
+      "geocodedAt": "2026-08-03T02:48:14.352Z"
     },
     {
       "id": "famousForest_11",
@@ -232,16 +232,16 @@
       "year": "2017",
       "address": "서울시 동대문구 청량리동 산1-1외 7필",
       "navigationAddress": "",
-      "species": "낙우송, 종비나무, 등, 총, 2, 035종",
+      "species": "낙우송, 종비나무 등 총 2, 035종",
       "areaHa": 41.2,
       "management": "국립산림과학원",
       "contact": "031-540-1016",
       "note": "산림과학연구 시험림, 국가산림문화자산 제1호",
       "latitude": 37.5958307,
-      "longitude": 127.0440287,
+      "longitude": 127.0440286,
       "hasCoords": true,
       "matchedAddress": "서울특별시 동대문구 청량리동 산1-1",
-      "geocodedAt": "2026-07-15T08:04:19.568Z"
+      "geocodedAt": "2026-08-03T02:48:14.536Z"
     },
     {
       "id": "famousForest_12",
@@ -252,7 +252,7 @@
       "year": "2017",
       "address": "경기 포천시 소홀읍 직동리 산50",
       "navigationAddress": "",
-      "species": "전나무, 서어나무, 갈참나무, 등, 총, 3, 344종",
+      "species": "전나무, 서어나무, 갈참나무 등 총 3, 344종",
       "areaHa": 1123,
       "management": "국립수목원(광릉숲보전센터)",
       "contact": "033-463-8166",
@@ -261,7 +261,7 @@
       "longitude": 127.169753,
       "hasCoords": true,
       "matchedAddress": "경기도 포천시 소흘읍 직동리",
-      "geocodedAt": "2026-07-15T08:06:24.554Z"
+      "geocodedAt": "2026-08-03T02:48:14.846Z"
     },
     {
       "id": "famousForest_13",
@@ -272,16 +272,16 @@
       "year": "2017",
       "address": "강원 인제군 기린면 진동리 산71 외 1필",
       "navigationAddress": "",
-      "species": "참나무류, 주목, 한계령, 풀, 등",
+      "species": "참나무류, 주목, 한계령 풀 등",
       "areaHa": 2369,
       "management": "북부지방산림청 인제국유림관리소",
       "contact": "033-460-8036",
       "note": "산림유전자원보호구역, 국립방태산, 용대자연휴양림",
-      "latitude": 38.0103839,
-      "longitude": 128.4493382,
+      "latitude": 38.0105134,
+      "longitude": 128.4494269,
       "hasCoords": true,
       "matchedAddress": "강원특별자치도 인제군 기린면 설피밭길 552",
-      "geocodedAt": "2026-07-15T08:04:19.939Z"
+      "geocodedAt": "2026-08-03T02:48:15.028Z"
     },
     {
       "id": "famousForest_14",
@@ -292,16 +292,16 @@
       "year": "2017",
       "address": "강원 인제군 기린면 방동리 산282-1번지 외 1필",
       "navigationAddress": "",
-      "species": "세잎승마, 등칡, 도깨비, 부채, 등",
+      "species": "세잎승마, 등칡, 도깨비 부채 등",
       "areaHa": 1897,
       "management": "북부지방산림청 인제국유림관리소",
       "contact": "033-434-9575",
       "note": "산림유전자원보호구역 추가지정 예정",
-      "latitude": 37.9126627,
-      "longitude": 128.4124996,
+      "latitude": 37.9126913,
+      "longitude": 128.4126056,
       "hasCoords": true,
       "matchedAddress": "강원특별자치도 인제군 기린면 방동약수로 89-53",
-      "geocodedAt": "2026-07-15T08:04:20.123Z"
+      "geocodedAt": "2026-08-03T02:48:15.345Z"
     },
     {
       "id": "famousForest_15",
@@ -312,7 +312,7 @@
       "year": "2017",
       "address": "강원 홍천군 내면 자운리 산254-1외 11필",
       "navigationAddress": "",
-      "species": "주목, 분비나무, 금강초롱꽃, 꽃개회나무, 등",
+      "species": "주목, 분비나무, 금강초롱꽃, 꽃개회나무 등",
       "areaHa": 4345,
       "management": "북부지방산림청 홍천국유림관리소, 동부지방산림청 평창국유림관리소",
       "contact": "043-850-3334",
@@ -321,7 +321,7 @@
       "longitude": 128.4318524,
       "hasCoords": true,
       "matchedAddress": "강원특별자치도 홍천군 내면 자운리 산254-1",
-      "geocodedAt": "2026-07-15T08:04:20.302Z"
+      "geocodedAt": "2026-08-03T02:48:15.528Z"
     },
     {
       "id": "famousForest_16",
@@ -332,7 +332,7 @@
       "year": "2017",
       "address": "충북 충주시 수안보면 수회리 산58-1 외 7필지",
       "navigationAddress": "충북 충주시 수안보면 수회리로 72 국립산림품종관리센터",
-      "species": "가문비나무, 낙엽송, 대왕참나무, 백합나무, 등",
+      "species": "가문비나무, 낙엽송, 대왕참나무, 백합나무 등",
       "areaHa": 27,
       "management": "국립산림품종관리센터",
       "contact": "055-370-2730",
@@ -341,7 +341,7 @@
       "longitude": 127.9732676,
       "hasCoords": true,
       "matchedAddress": "충청북도 충주시 수안보면 수회리로 72 국립산림품종관리센터",
-      "geocodedAt": "2026-07-15T08:04:20.512Z"
+      "geocodedAt": "2026-08-03T02:48:15.738Z"
     },
     {
       "id": "famousForest_17",
@@ -352,7 +352,7 @@
       "year": "2017",
       "address": "울산 울주군 상북면 이천리 산2",
       "navigationAddress": "",
-      "species": "소나무, 신갈나무, 물오리나무, 억새, 등",
+      "species": "소나무, 신갈나무, 물오리나무, 억새 등",
       "areaHa": 338,
       "management": "남부지방산림청 양산국유림관리소",
       "contact": "054-791-1252",
@@ -361,7 +361,7 @@
       "longitude": 129.0350222,
       "hasCoords": true,
       "matchedAddress": "울산광역시 울주군 상북면 억새벌길 200-78",
-      "geocodedAt": "2026-07-15T08:04:20.696Z"
+      "geocodedAt": "2026-08-03T02:48:15.935Z"
     },
     {
       "id": "famousForest_18",
@@ -372,7 +372,7 @@
       "year": "2017",
       "address": "경북 울릉군 북면 나리 산44-1 외 5필지",
       "navigationAddress": "울릉근 북면 나리 80-1(등산로 입구)",
-      "species": "우산고로쇠, 마가목, 너도밤나무, 등",
+      "species": "우산고로쇠, 마가목, 너도밤나무 등",
       "areaHa": 706,
       "management": "남부지방산림청 산림경영과(울릉국유림사업소)",
       "contact": "061-470-5331",
@@ -381,7 +381,7 @@
       "longitude": 130.8684598,
       "hasCoords": true,
       "matchedAddress": "경상북도 울릉군 북면 나리 산44-1",
-      "geocodedAt": "2026-07-15T08:05:06.606Z"
+      "geocodedAt": "2026-08-03T02:48:16.238Z"
     },
     {
       "id": "famousForest_19",
@@ -401,7 +401,7 @@
       "longitude": 126.8797996,
       "hasCoords": true,
       "matchedAddress": "전남광주통합특별시 장흥군 관산읍 부평리 산109-1",
-      "geocodedAt": "2026-07-15T08:04:21.101Z"
+      "geocodedAt": "2026-08-03T02:48:16.430Z"
     },
     {
       "id": "famousForest_20",
@@ -412,7 +412,7 @@
       "year": "2017",
       "address": "제주 서귀포시 남원읍 한남리 산2-1외 1필",
       "navigationAddress": "",
-      "species": "서어나무, 삼나무, 졸참나무, 등, 총, 440종",
+      "species": "서어나무, 삼나무, 졸참나무 등 총 440종",
       "areaHa": 1203,
       "management": "국립산림과학원(난대아열대산림연구소)",
       "contact": "033-670-3062",
@@ -421,7 +421,7 @@
       "longitude": 126.6462035,
       "hasCoords": true,
       "matchedAddress": "제주특별자치도 서귀포시 남원읍 516로 1648-87",
-      "geocodedAt": "2026-07-15T08:04:21.283Z"
+      "geocodedAt": "2026-08-03T02:48:16.610Z"
     },
     {
       "id": "famousForest_21",
@@ -432,7 +432,7 @@
       "year": "2019",
       "address": "강원 고성군 간성읍 장신리 산1-1",
       "navigationAddress": "강원 공성군 간성읍 흘리길 15-10",
-      "species": "물푸레, 신갈, 등",
+      "species": "물푸레, 신갈 등",
       "areaHa": 1272,
       "management": "동부지방산림청 양양국유림관리소",
       "contact": "033-461-9696",
@@ -441,7 +441,7 @@
       "longitude": 128.3473802,
       "hasCoords": true,
       "matchedAddress": "강원특별자치도 고성군 간성읍 장신리 산1-1",
-      "geocodedAt": "2026-07-15T08:05:06.834Z"
+      "geocodedAt": "2026-08-03T02:48:16.862Z"
     },
     {
       "id": "famousForest_22",
@@ -461,7 +461,7 @@
       "longitude": 128.2233777,
       "hasCoords": true,
       "matchedAddress": "강원특별자치도 인제군 인제읍 원대리 산75-22",
-      "geocodedAt": "2026-07-15T08:04:21.662Z"
+      "geocodedAt": "2026-08-03T02:48:17.047Z"
     },
     {
       "id": "famousForest_23",
@@ -472,7 +472,7 @@
       "year": "2018",
       "address": "강원 영월군 중동면 직동리 산1-1외 5필",
       "navigationAddress": "정선군 고한읍 함백산로 865",
-      "species": "낙엽송, 전나무, 신갈, 등",
+      "species": "낙엽송, 전나무, 신갈 등",
       "areaHa": 2771,
       "management": "동부지방산림청 영월·정선 국유림관리소",
       "contact": "033-480-8533",
@@ -481,7 +481,7 @@
       "longitude": 128.8990443,
       "hasCoords": true,
       "matchedAddress": "강원특별자치도 정선군 고한읍 함백산로 865",
-      "geocodedAt": "2026-07-15T08:04:21.866Z"
+      "geocodedAt": "2026-08-03T02:48:17.251Z"
     },
     {
       "id": "famousForest_24",
@@ -492,7 +492,7 @@
       "year": "2018",
       "address": "강원 양구군 해안면 오유리 산1외 242필",
       "navigationAddress": "",
-      "species": "물박달나무, 느릅나무, 다릅나무, 신갈나무, 등",
+      "species": "물박달나무, 느릅나무, 다릅나무, 신갈나무 등",
       "areaHa": 3241,
       "management": "북부지방산림청 민북지역국유림관리소",
       "contact": "054-730-8131",
@@ -501,7 +501,7 @@
       "longitude": 128.0936273,
       "hasCoords": true,
       "matchedAddress": "강원특별자치도 양구군 해안면 오유리 산1",
-      "geocodedAt": "2026-07-15T08:04:22.069Z"
+      "geocodedAt": "2026-08-03T02:48:17.442Z"
     },
     {
       "id": "famousForest_25",
@@ -521,7 +521,7 @@
       "longitude": 129.2455269,
       "hasCoords": true,
       "matchedAddress": "경상북도 영양군 수비면 한티로 1065",
-      "geocodedAt": "2026-07-15T08:05:07.097Z"
+      "geocodedAt": "2026-08-03T02:48:17.712Z"
     },
     {
       "id": "famousForest_26",
@@ -541,7 +541,7 @@
       "longitude": 128.0248379,
       "hasCoords": true,
       "matchedAddress": "경상남도 남해군 삼동면 금암로 658 남해편백자연휴양림",
-      "geocodedAt": "2026-07-15T08:05:07.321Z"
+      "geocodedAt": "2026-08-03T02:48:17.995Z"
     },
     {
       "id": "famousForest_27",
@@ -561,7 +561,7 @@
       "longitude": 126.6698108,
       "hasCoords": true,
       "matchedAddress": "충청남도 서천군 종천면 희리산길 206 희리산해송자연휴향림",
-      "geocodedAt": "2026-07-15T08:05:07.549Z"
+      "geocodedAt": "2026-08-03T02:48:18.257Z"
     },
     {
       "id": "famousForest_28",
@@ -572,7 +572,7 @@
       "year": "2018",
       "address": "충북 단양군 대강면 올산리 산74-1",
       "navigationAddress": "국립황정산자연휴양림 관리사무소",
-      "species": "졸참, 소나무, 낙엽송, 물박달, 등",
+      "species": "졸참, 소나무, 낙엽송, 물박달 등",
       "areaHa": 252,
       "management": "중부지방산림청 단양국유림관리소, 국립황정산자연휴양림",
       "contact": "043-420-0341",
@@ -581,7 +581,7 @@
       "longitude": 128.3483289,
       "hasCoords": true,
       "matchedAddress": "충청북도 단양군 대강면 황정산로 239-11 국립황정산휴양림",
-      "geocodedAt": "2026-07-15T08:05:07.784Z"
+      "geocodedAt": "2026-08-03T02:48:18.527Z"
     },
     {
       "id": "famousForest_29",
@@ -592,16 +592,16 @@
       "year": "2018",
       "address": "충북 단양군 단양읍 천동리 산9-1",
       "navigationAddress": "충북 단양군 단양읍 천동리 천동탐방지원센터",
-      "species": "졸참, 신갈, 소나무, 낙엽송, 등",
+      "species": "졸참, 신갈, 소나무, 낙엽송 등",
       "areaHa": 1240,
       "management": "중부지방산림청 단양국유림관리소, 국립공원관리공단 소백산북부사업소",
       "contact": "063-320-3642",
       "note": "등산로 숲길 6.8km, 희귀식물자생(주목, 56ha)",
-      "latitude": 36.9515606,
+      "latitude": 36.9515605,
       "longitude": 128.4462245,
       "hasCoords": true,
       "matchedAddress": "충청북도 단양군 단양읍 소백산등산길 103 소백산북부사무소",
-      "geocodedAt": "2026-07-15T08:05:08.014Z"
+      "geocodedAt": "2026-08-03T02:48:18.809Z"
     },
     {
       "id": "famousForest_30",
@@ -612,7 +612,7 @@
       "year": "2018",
       "address": "전북 진안군 정천면 갈용리 산183",
       "navigationAddress": "국립운장산자연휴양림관리소",
-      "species": "굴참나무, 신갈나무, 등",
+      "species": "굴참나무, 신갈나무 등",
       "areaHa": 1031,
       "management": "서부지방산림청 무주국유림관리소, 국립운장산자연휴양림",
       "contact": "02-3299-4561",
@@ -621,7 +621,7 @@
       "longitude": 127.4116534,
       "hasCoords": true,
       "matchedAddress": "전북특별자치도 진안군 정천면 휴양림길 77 운장산 자연휴양림",
-      "geocodedAt": "2026-07-15T08:05:08.233Z"
+      "geocodedAt": "2026-08-03T02:48:19.062Z"
     },
     {
       "id": "famousForest_31",
@@ -632,7 +632,7 @@
       "year": "2018",
       "address": "인천 중구 무의동 산151-1외 50필",
       "navigationAddress": "",
-      "species": "소나무, 소사나무, 떡갈나무, 등",
+      "species": "소나무, 소사나무, 떡갈나무 등",
       "areaHa": 331,
       "management": "북부지방산림청 서울국유림관리소",
       "contact": "054-712-4142",
@@ -641,7 +641,7 @@
       "longitude": 126.4166953,
       "hasCoords": true,
       "matchedAddress": "인천광역시 영종구 하나개로 74",
-      "geocodedAt": "2026-07-15T08:04:23.356Z"
+      "geocodedAt": "2026-08-03T02:48:19.255Z"
     },
     {
       "id": "famousForest_32",
@@ -652,16 +652,16 @@
       "year": "2019",
       "address": "경북 김천시 증산면 수도리 산9-2",
       "navigationAddress": "",
-      "species": "소나무, 낙엽송, 자작나무, 등",
+      "species": "소나무, 낙엽송, 자작나무 등",
       "areaHa": 1247,
       "management": "남부지방산림청 구미국유림관리소",
       "contact": "043-540-7075",
       "note": "18년 김천 치유의 숲 조성",
       "latitude": 35.8412567,
-      "longitude": 128.010544,
+      "longitude": 128.0105439,
       "hasCoords": true,
       "matchedAddress": "경상북도 김천시 증산면 수도길 1237-89",
-      "geocodedAt": "2026-07-15T08:04:23.543Z"
+      "geocodedAt": "2026-08-03T02:48:19.440Z"
     },
     {
       "id": "famousForest_33",
@@ -672,7 +672,7 @@
       "year": "2019",
       "address": "충북 보은군 장안면 장재리 산5-1",
       "navigationAddress": "국립속리산말티재 자연휴양림관리사무소",
-      "species": "소나무, 리기다, 낙엽송, 신갈, 등",
+      "species": "소나무, 리기다, 낙엽송, 신갈 등",
       "areaHa": 119,
       "management": "중부지방산림청 보은국유림관리소, 국립말티재자연휴양림",
       "contact": "055-960-2531",
@@ -681,7 +681,7 @@
       "longitude": 127.7850338,
       "hasCoords": true,
       "matchedAddress": "충청북도 보은군 장안면 속리산로 256 휴양림",
-      "geocodedAt": "2026-07-15T08:05:08.449Z"
+      "geocodedAt": "2026-08-03T02:48:19.756Z"
     },
     {
       "id": "famousForest_34",
@@ -692,7 +692,7 @@
       "year": "2019",
       "address": "경남 함양군 함양읍 죽림리 산364",
       "navigationAddress": "",
-      "species": "금강소나무, 낙엽송, 주목, 등",
+      "species": "금강소나무, 낙엽송, 주목 등",
       "areaHa": 20,
       "management": "서부지방산림청 함양국유림관리소",
       "contact": "033-240-9941",
@@ -701,7 +701,7 @@
       "longitude": 127.6646284,
       "hasCoords": true,
       "matchedAddress": "경상남도 함양군 함양읍 삼봉로 62",
-      "geocodedAt": "2026-07-15T08:04:23.959Z"
+      "geocodedAt": "2026-08-03T02:48:19.950Z"
     },
     {
       "id": "famousForest_35",
@@ -712,7 +712,7 @@
       "year": "2020",
       "address": "춘천시 남산면 방하리 산 95-1 외",
       "navigationAddress": "",
-      "species": "굴참나무, 신갈, 등",
+      "species": "굴참나무, 신갈 등",
       "areaHa": 116,
       "management": "북부지방산림청 춘천국유림관리소",
       "contact": "033-371-8135",
@@ -721,7 +721,7 @@
       "longitude": 127.5580375,
       "hasCoords": true,
       "matchedAddress": "강원특별자치도 춘천시 남산면 방하리 산95-1",
-      "geocodedAt": "2026-07-15T08:04:24.139Z"
+      "geocodedAt": "2026-08-03T02:48:20.146Z"
     },
     {
       "id": "famousForest_36",
@@ -732,7 +732,7 @@
       "year": "2020",
       "address": "강원 영월읍 흥월리 산38 외3",
       "navigationAddress": "",
-      "species": "신갈, 소나무, 낙엽송, 굴참, 등",
+      "species": "신갈, 소나무, 낙엽송, 굴참 등",
       "areaHa": 715,
       "management": "동부지방산림청 영월국유림관리소",
       "contact": "054-730-8131",
@@ -741,7 +741,7 @@
       "longitude": 128.4788731,
       "hasCoords": true,
       "matchedAddress": "강원특별자치도 영월군 영월읍 흥월리 산38",
-      "geocodedAt": "2026-07-15T08:04:24.329Z"
+      "geocodedAt": "2026-08-03T02:48:20.321Z"
     },
     {
       "id": "famousForest_37",
@@ -761,7 +761,7 @@
       "longitude": 129.2531411,
       "hasCoords": true,
       "matchedAddress": "경상북도 영양군 수비면 죽파리 산39-1",
-      "geocodedAt": "2026-07-15T08:04:24.515Z"
+      "geocodedAt": "2026-08-03T02:48:20.489Z"
     },
     {
       "id": "famousForest_38",
@@ -772,7 +772,7 @@
       "year": "2020",
       "address": "충북 충주시 산척면 송강리 산236-1",
       "navigationAddress": "",
-      "species": "소나무, 전나무, 낙엽송, 백합, 등",
+      "species": "소나무, 전나무, 낙엽송, 백합 등",
       "areaHa": 745,
       "management": "중부지방산림청 충주국유림관리소",
       "contact": "063-570-1932",
@@ -781,7 +781,7 @@
       "longitude": 127.9792661,
       "hasCoords": true,
       "matchedAddress": "충청북도 충주시 산척면 송강길 492-62",
-      "geocodedAt": "2026-07-15T08:04:24.693Z"
+      "geocodedAt": "2026-08-03T02:48:20.681Z"
     },
     {
       "id": "famousForest_39",
@@ -801,7 +801,7 @@
       "longitude": 126.7188294,
       "hasCoords": true,
       "matchedAddress": "전북특별자치도 고창군 고창읍 화산리 산100",
-      "geocodedAt": "2026-07-15T08:04:24.869Z"
+      "geocodedAt": "2026-08-03T02:48:20.860Z"
     },
     {
       "id": "famousForest_40",
@@ -821,7 +821,7 @@
       "longitude": 127.774117,
       "hasCoords": true,
       "matchedAddress": "경기도 양평군 양동면 삼산리 산95-1",
-      "geocodedAt": "2026-07-15T08:04:25.055Z"
+      "geocodedAt": "2026-08-03T02:48:21.049Z"
     },
     {
       "id": "famousForest_41",
@@ -832,7 +832,7 @@
       "year": "2021",
       "address": "강원도 평창군 대관령면 용산리 산142-1",
       "navigationAddress": "",
-      "species": "신갈, 주목, 분비나무, 등",
+      "species": "신갈, 주목, 분비나무 등",
       "areaHa": 1018,
       "management": "동부지방산림청 평창국유림관리소",
       "contact": "055-370-2730",
@@ -841,7 +841,7 @@
       "longitude": 128.6428654,
       "hasCoords": true,
       "matchedAddress": "강원특별자치도 평창군 대관령면 용산리 산142-1",
-      "geocodedAt": "2026-07-15T08:04:25.229Z"
+      "geocodedAt": "2026-08-03T02:48:21.230Z"
     },
     {
       "id": "famousForest_42",
@@ -852,16 +852,16 @@
       "year": "2021",
       "address": "경상남도 창원시 진해구 대장동 산1-9 외 1",
       "navigationAddress": "",
-      "species": "편백, 굴참나무, 등",
+      "species": "편백, 굴참나무 등",
       "areaHa": 109,
       "management": "남부지방산림청 양산국유림관리소",
       "contact": "041-830-5041",
       "note": "자연경관이 수려한 도심형 편백 숲",
       "latitude": 35.1548134,
-      "longitude": 128.7728659,
+      "longitude": 128.772866,
       "hasCoords": true,
       "matchedAddress": "경상남도 창원시 진해구 대장동 산1-9",
-      "geocodedAt": "2026-07-15T08:04:25.450Z"
+      "geocodedAt": "2026-08-03T02:48:21.421Z"
     },
     {
       "id": "famousForest_43",
@@ -872,7 +872,7 @@
       "year": "2021",
       "address": "대전시 유성구 계산동 산1-1",
       "navigationAddress": "대전 유성구 학산로 62-54(계산동 277-1)",
-      "species": "리기테다소나무, 낙엽송, 등",
+      "species": "리기테다소나무, 낙엽송 등",
       "areaHa": 58,
       "management": "중부지방산림청 부여국유림관리소",
       "contact": "061-470-5341",
@@ -881,7 +881,7 @@
       "longitude": 127.2968778,
       "hasCoords": true,
       "matchedAddress": "대전광역시 유성구 학산로 62-54",
-      "geocodedAt": "2026-07-15T08:04:25.661Z"
+      "geocodedAt": "2026-08-03T02:48:21.640Z"
     },
     {
       "id": "famousForest_44",
@@ -892,7 +892,7 @@
       "year": "2021",
       "address": "전라남도 장성군 서삼면  모암리 산97 외34",
       "navigationAddress": "",
-      "species": "편백, 삼나무, 낙엽송, 등",
+      "species": "편백, 삼나무, 낙엽송 등",
       "areaHa": 388,
       "management": "서부지방산림청 영암국유림관리소",
       "contact": "061-470-5341",
@@ -901,7 +901,7 @@
       "longitude": 126.7394627,
       "hasCoords": true,
       "matchedAddress": "전남광주통합특별시 장성군 서삼면 모암리 산97",
-      "geocodedAt": "2026-07-15T08:04:25.870Z"
+      "geocodedAt": "2026-08-03T02:48:21.870Z"
     },
     {
       "id": "famousForest_45",
@@ -912,7 +912,7 @@
       "year": "2022년",
       "address": "경남 거제시 장평동 산91 외 3",
       "navigationAddress": "",
-      "species": "편백나무, 삼나무, 등",
+      "species": "편백나무, 삼나무 등",
       "areaHa": 29,
       "management": "서부지방산림청 함양국유림관리소",
       "contact": "041-830-5041",
@@ -921,7 +921,7 @@
       "longitude": 128.5971172,
       "hasCoords": true,
       "matchedAddress": "경상남도 거제시 장평동 산91",
-      "geocodedAt": "2026-07-15T08:04:26.056Z"
+      "geocodedAt": "2026-08-03T02:48:22.041Z"
     },
     {
       "id": "famousForest_46",
@@ -932,7 +932,7 @@
       "year": "2022년",
       "address": "강원도 평창군 대관령면 횡계리 산14-25 외 8",
       "navigationAddress": "",
-      "species": "전나무, 잣나무, 가문비, 등",
+      "species": "전나무, 잣나무, 가문비 등",
       "areaHa": 618,
       "management": "동부지방산림청 평창국유림관리소",
       "contact": "055-370-2730",
@@ -941,7 +941,7 @@
       "longitude": 128.7238,
       "hasCoords": true,
       "matchedAddress": "강원특별자치도 평창군 대관령면 횡계리",
-      "geocodedAt": "2026-07-15T08:06:24.806Z"
+      "geocodedAt": "2026-08-03T02:48:22.302Z"
     },
     {
       "id": "famousForest_47",
@@ -952,7 +952,7 @@
       "year": "2022년",
       "address": "강원도 동해시 삼화동 산267",
       "navigationAddress": "",
-      "species": "소나무, 신갈, 굴참, 박달, 등",
+      "species": "소나무, 신갈, 굴참, 박달 등",
       "areaHa": 2427,
       "management": "동부지방산림청 삼척국유림관리소",
       "contact": "033-570-5241",
@@ -961,7 +961,7 @@
       "longitude": 128.9986583,
       "hasCoords": true,
       "matchedAddress": "강원특별자치도 동해시 삼화동 산267",
-      "geocodedAt": "2026-07-15T08:04:26.459Z"
+      "geocodedAt": "2026-08-03T02:48:22.482Z"
     },
     {
       "id": "famousForest_48",
@@ -972,7 +972,7 @@
       "year": "2022년",
       "address": "충남 청양군 비봉면 신원리 산100-1 외3",
       "navigationAddress": "",
-      "species": "자잣나무, 잣나무, 낙엽송, 등",
+      "species": "자잣나무, 잣나무, 낙엽송 등",
       "areaHa": 59,
       "management": "중부지방산림청 부여국유림관리소",
       "contact": "043-420-0341",
@@ -981,7 +981,7 @@
       "longitude": 126.8090757,
       "hasCoords": true,
       "matchedAddress": "충청남도 청양군 비봉면 신원리 산100-1",
-      "geocodedAt": "2026-07-15T08:04:26.656Z"
+      "geocodedAt": "2026-08-03T02:48:22.667Z"
     },
     {
       "id": "famousForest_49",
@@ -992,23 +992,23 @@
       "year": "2022년",
       "address": "경북 영주시 봉현면 두산리 산32-1",
       "navigationAddress": "",
-      "species": "낙엽송, 신갈나무, 등",
+      "species": "낙엽송, 신갈나무 등",
       "areaHa": 58,
       "management": "남부지방산림청 영주국유림관리소",
       "contact": "054-630-4031",
       "note": "한적히 산책하기 좋은 치유 숲",
       "latitude": 36.8427434,
-      "longitude": 128.477109,
+      "longitude": 128.4771089,
       "hasCoords": true,
       "matchedAddress": "경상북도 영주시 봉현면 두산리 산32-1",
-      "geocodedAt": "2026-07-15T08:04:26.878Z"
+      "geocodedAt": "2026-08-03T02:48:22.837Z"
     }
   ],
   "geocoding": {
     "provider": "Naver Cloud Geocoding API",
-    "resolvedThisRun": 0,
+    "resolvedThisRun": 50,
     "unresolved": 0,
     "totalWithCoordinates": 50,
-    "completedAt": "2026-07-15T08:12:26.352Z"
+    "completedAt": "2026-08-03T02:48:22.939Z"
   }
 }
