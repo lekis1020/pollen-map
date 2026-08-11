@@ -73,4 +73,53 @@ describe('canonicalizeSpecies', () => {
     expect(r.species).toEqual(['느티느티나무넘은들5길나무']);
     expect(r.normalized).toBe(false);
   });
+
+  it('괄호 주기(좌우·암수)를 수종명에서 걷어낸다', () => {
+    // 괄호 안 쉼표가 복수 수종 구분자로 잘못 읽혀 "우)" 조각이 생기던 결함
+    expect(canonicalizeSpecies('배롱나무(좌,우)').species).toEqual(['배롱나무']);
+    expect(canonicalizeSpecies('목련(백,자)').species).toEqual(['목련']);
+    expect(canonicalizeSpecies('은행나무(수)+은행나무(암)').species).toEqual(['은행나무']);
+    // 닫는 괄호가 없는 원본도 있다
+    expect(canonicalizeSpecies('베롱나무(좌').species).toEqual(['배롱나무']);
+  });
+
+  it('본수·집계 표기를 수종명으로 오인하지 않는다', () => {
+    expect(canonicalizeSpecies('반송 외 4종').species).toEqual(['반송']);
+    expect(canonicalizeSpecies('피라칸사스 16300주').species).toEqual(['피라칸사스']);
+    expect(canonicalizeSpecies('낙우송, 종비나무 등 총 2,035종').species)
+      .toEqual(['낙우송', '종비나무']);
+    expect(canonicalizeSpecies('스잣+메타 외').species)
+      .toEqual(['스트로브잣나무', '메타세쿼이아']);
+  });
+
+  it('집계·범주어만 남으면 수종으로 치지 않는다', () => {
+    expect(canonicalizeSpecies('등').kind).toBe('unknown');
+    expect(canonicalizeSpecies('기타').kind).toBe('unknown');
+    expect(canonicalizeSpecies('활엽수').kind).toBe('unknown');
+  });
+
+  it('실측된 축약형을 정식명으로 확장한다', () => {
+    expect(canonicalizeSpecies('먼').species).toEqual(['먼나무']);
+    expect(canonicalizeSpecies('메타').species).toEqual(['메타세쿼이아']);
+    expect(canonicalizeSpecies('메세').species).toEqual(['메타세쿼이아']);
+    expect(canonicalizeSpecies('버즘').species).toEqual(['양버즘나무']);
+    expect(canonicalizeSpecies('시다').species).toEqual(['히말라야시다']);
+    expect(canonicalizeSpecies('대왕참').species).toEqual(['대왕참나무']);
+    expect(canonicalizeSpecies('백합수').species).toEqual(['튤립나무']);
+  });
+
+  it('실측된 오타를 교정한다', () => {
+    expect(canonicalizeSpecies('메타세콰이야').species).toEqual(['메타세쿼이아']);
+    expect(canonicalizeSpecies('네타세콰이어').species).toEqual(['메타세쿼이아']);
+    expect(canonicalizeSpecies('느니나무').species).toEqual(['느티나무']);
+    expect(canonicalizeSpecies('회회나무').species).toEqual(['회화나무']);
+    expect(canonicalizeSpecies('아팝나무').species).toEqual(['이팝나무']);
+    expect(canonicalizeSpecies('막우송').species).toEqual(['낙우송']);
+  });
+
+  it('한 글자 축약은 추측하지 않고 원본을 유지한다', () => {
+    // '소'가 소나무(등급 3)인지 단정할 수 없다. '가시'를 등재하지 않는 것과 같은 이유다.
+    expect(canonicalizeSpecies('소').species).toEqual(['소']);
+    expect(canonicalizeSpecies('전').species).toEqual(['전']);
+  });
 });

@@ -53,13 +53,20 @@ function getQualityOverlay() {
   return overlayPromise;
 }
 
+const CONFIDENCE_RANK = { high: 3, medium: 2, low: 1 };
+
 // 좌표 교정을 원본에 적용한다. 원본 객체는 건드리지 않고 복사본을 만든다.
 function applyCorrections(rawItem, correctionsByKey) {
   const corrections = correctionsByKey.get(nationwideKey(rawItem));
-  if (!corrections) return { item: rawItem, corrected: false };
+  if (!corrections) return { item: rawItem, correction: null };
   const item = { ...rawItem };
   for (const correction of corrections) item[correction.field] = correction.to;
-  return { item, corrected: true };
+  // 팝업이 "어떻게 고쳤는지"를 말할 수 있어야 한다. 한 레코드에 방식이 섞이면
+  // 가장 낮은 신뢰도를 대표로 쓴다 — 사용자에게 유리한 쪽으로 반올림하지 않는다.
+  const weakest = corrections.reduce((acc, c) =>
+    (CONFIDENCE_RANK[c.confidence] || 0) < (CONFIDENCE_RANK[acc.confidence] || 0) ? c : acc
+  );
+  return { item, correction: { method: weakest.method, confidence: weakest.confidence } };
 }
 
 // 전국 가로수길 정적 스냅샷 로드 (scripts/fetch-sttree-roads.mjs 산출물, 10,423 노선)
@@ -80,13 +87,13 @@ async function loadStreetTreeRoads() {
   // 플래그는 원본 기준으로 산출됐으므로 교정 전 키로 조회한다.
   const keys = valid.map(nationwideKey);
   const normalized = valid.map((raw) => {
-    const { item, corrected } = applyCorrections(raw, overlay.correctionsByKey);
-    return { record: normalize(item), corrected };
+    const { item, correction } = applyCorrections(raw, overlay.correctionsByKey);
+    return { record: normalize(item), correction };
   });
-  normalized.forEach(({ record, corrected }, i) => {
+  normalized.forEach(({ record, correction }, i) => {
     record.sourceKey = keys[i];
     record.qualityFlags = overlay.nationwideFlags[keys[i]] || [];
-    record.coordCorrected = corrected;
+    record.coordCorrection = correction;
   });
 
   return {

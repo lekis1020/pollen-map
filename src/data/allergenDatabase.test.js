@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   getAllergenInfo, getAllergenLevel, getAllergenMatch, getAllergenInfos,
-  ALLERGEN_LEVELS,
+  ALLERGEN_LEVELS, ALLERGEN_DATABASE,
 } from './allergenDatabase';
 
 describe('축약형 매칭 (회귀 방지)', () => {
@@ -142,5 +142,106 @@ describe('참나무속 오분류 방지', () => {
       expect(getAllergenInfo(name)?.name).not.toBe('가시나무');
       expect(getAllergenLevel(name)).not.toBe(3);
     }
+  });
+});
+
+describe('속(屬) 정합성 — 같은 속인데 누락됐던 false negative', () => {
+  // 등급 근거: docs/superpowers/specs/2026-08-03-research-broadleaf.md
+  it('자작나무속은 전부 등급 4다', () => {
+    // Bet v 1은 자작나무속 내 고도로 보존된 알레르겐이다.
+    // 자작나무만 4로 두고 물박달·박달을 0으로 두면 임상 감별에서 놓친다.
+    for (const name of ['자작나무', '물박달나무', '박달나무']) {
+      expect(getAllergenLevel(name)).toBe(4);
+    }
+  });
+
+  it('느릅나무속은 전부 등급 3이다', () => {
+    // elm은 한국 소아 5대 수목 알레르겐 중 하나다 (PMID 28480649).
+    for (const name of ['느릅나무', '비술나무']) {
+      expect(getAllergenLevel(name)).toBe(3);
+    }
+  });
+
+  it('자작나무과 풍매화 수종이 등재되어 있다', () => {
+    // 서어나무속 Car b 1은 WHO/IUIS 공인 알레르겐이다.
+    expect(getAllergenLevel('서어나무')).toBe(3);
+    expect(getAllergenLevel('소사나무')).toBe(3);
+  });
+
+  it('화본과는 잔디와 같은 등급 3이다', () => {
+    // 그룹 1 알레르겐(Phl p 1 계열)이 Poaceae 전반에 보존된다.
+    // 억새·핑크뮬리는 9~11월 개화라 가을 화분 시즌과 겹친다.
+    for (const name of ['잔디', '억새', '핑크뮬리']) {
+      expect(getAllergenLevel(name)).toBe(3);
+    }
+  });
+
+  it('측백나무과 항목은 교차반응을 고지한다', () => {
+    // 등급이 갈리는 이유는 알레르겐이 달라서가 아니라 국내 노출량이 달라서다.
+    // 이걸 밝히지 않으면 "향나무는 삼나무와 다른 항원"으로 읽힌다.
+    for (const name of ['삼나무', '편백', '향나무', '측백나무', '화백', '서양측백']) {
+      expect(getAllergenInfo(name).symptoms).toContain('Cupressaceae');
+    }
+  });
+});
+
+describe('조경 품종명 커버리지', () => {
+  // 공공데이터에는 종명 대신 유통 품종명이 그대로 적힌 칸이 많다.
+  // 품종명이 매칭되지 않으면 풍매화 침엽수가 "정보 없음"으로 표시된다.
+  it('서양측백 품종명이 등급 3으로 매칭된다', () => {
+    for (const name of ['에메랄드그린', '에메랄드골드', '써니스마라그']) {
+      expect(getAllergenLevel(name)).toBe(3);
+    }
+  });
+
+  it('레드로빈은 홍가시나무로 매칭된다', () => {
+    expect(getAllergenInfo('레드로빈').name).toBe('홍가시나무');
+  });
+
+  it('진달래속 조경 품종이 흡수된다', () => {
+    for (const name of ['영산홍', '자산홍', '산철쭉']) {
+      expect(getAllergenInfo(name).name).toBe('진달래');
+    }
+  });
+});
+
+describe('DB 불변식', () => {
+  it('축약 keyword는 두 글자 이상이다', () => {
+    // 부분일치 폴백이 name.includes(keyword)라서 한 글자 keyword는
+    // 그 글자를 포함한 모든 라벨을 삼킨다. '가시'를 등재하지 않은 것과 같은 이유로
+    // '전'(전나무)·'뽕'(뽕나무) 같은 한 글자 축약도 넣지 않는다.
+    // 국명 자체가 한 글자인 수종('쑥')만 예외 — 이건 축약이 아니라 정식 이름이다.
+    const tooShort = ALLERGEN_DATABASE.flatMap((entry) =>
+      entry.keywords.filter((k) => k.length < 2 && k !== entry.name)
+    );
+    expect(tooShort).toEqual([]);
+  });
+
+  it('등급 0인 항목은 없다', () => {
+    // 0은 "미등재"를 뜻하는 값이라 DB 안에 존재하면 의미가 무너진다.
+    expect(ALLERGEN_DATABASE.filter((entry) => entry.level === 0)).toEqual([]);
+  });
+
+  it('모든 항목이 근거를 남길 필수 필드를 갖는다', () => {
+    for (const entry of ALLERGEN_DATABASE) {
+      expect(entry.scientificName, entry.name).toBeTruthy();
+      expect(entry.symptoms, entry.name).toBeTruthy();
+      expect(entry.pollenMonths.length, entry.name).toBeGreaterThan(0);
+    }
+  });
+
+  it('한 keyword가 등급이 다른 두 항목에 중복 등재되지 않는다', () => {
+    const seen = new Map();
+    const conflicts = [];
+    for (const entry of ALLERGEN_DATABASE) {
+      for (const key of [entry.name, ...entry.keywords]) {
+        const prev = seen.get(key);
+        if (prev && prev.level !== entry.level) {
+          conflicts.push(`${key}: ${prev.name}(${prev.level}) vs ${entry.name}(${entry.level})`);
+        }
+        if (!prev) seen.set(key, entry);
+      }
+    }
+    expect(conflicts).toEqual([]);
   });
 });
