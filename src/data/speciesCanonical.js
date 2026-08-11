@@ -156,8 +156,19 @@ const COUNT_PHRASE = /\s*(?:외|총)?\s*\d[\d,]*\s*(?:종|주|본|그루)/g;
 // 분해 후 남는 집계·범주어. 수종명이 아니므로 버린다.
 const AGGREGATE = new Set(['등', '총', '외', '기타', '수종', '활엽수', '침엽수', '약용수']);
 
+// 토큰 꼬리에 띄어쓰기로 붙은 집계어. "갈참나무 등 총" → "갈참나무".
+// 원본의 "총 2,035종"이 저장 단계에서 "총 2, 035종"으로 쪼개지면
+// COUNT_PHRASE가 "035종"만 지우고 "등 총 2"가 남는데, 그 잔재를 여기서 턴다.
+// 띄어쓰기가 있는 경우만 떼므로 '등칡'이나 '느티나무등' 같은 라벨은 건드리지 않는다.
+// 숫자를 먼저 떼면 "종비나무 등 총 " 처럼 공백이 남으므로 꼬리 공백도 허용한다.
+const TRAILING_AGGREGATE = /(?:\s+(?:등|총|외))+\s*$/;
+
 function canonicalizeOne(token) {
-  const trimmed = token.trim().replace(EDGE_DIGITS, '').trim();
+  const trimmed = token
+    .trim()
+    .replace(EDGE_DIGITS, '')
+    .replace(TRAILING_AGGREGATE, '')
+    .trim();
   if (!trimmed) return null;
   const fixed = TYPO[trimmed] || ABBREV[trimmed];
   return { name: fixed || trimmed, changed: Boolean(fixed) };

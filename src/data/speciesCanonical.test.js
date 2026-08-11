@@ -92,6 +92,16 @@ describe('canonicalizeSpecies', () => {
       .toEqual(['스트로브잣나무', '메타세쿼이아']);
   });
 
+  it('천단위 쉼표가 이미 쪼개진 집계 표기도 걷어낸다', () => {
+    // 명품숲 원본의 "총 2,035종"은 저장 단계에서 쉼표로 쪼개져
+    // "총 2, 035종"으로 들어온다. 이때 "035종"만 지워지고 "등 총 2"가 남아
+    // 수종 필터에 "종비나무 등 총"이 뜨던 결함.
+    expect(canonicalizeSpecies('낙우송, 종비나무 등 총 2, 035종').species)
+      .toEqual(['낙우송', '종비나무']);
+    expect(canonicalizeSpecies('전나무, 서어나무, 갈참나무 등 총 3, 344종').species)
+      .toEqual(['전나무', '서어나무', '갈참나무']);
+  });
+
   it('집계·범주어만 남으면 수종으로 치지 않는다', () => {
     expect(canonicalizeSpecies('등').kind).toBe('unknown');
     expect(canonicalizeSpecies('기타').kind).toBe('unknown');
