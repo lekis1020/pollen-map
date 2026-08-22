@@ -1,4 +1,4 @@
-import { getAllergenLevel, ALLERGEN_LEVELS } from '../data/allergenDatabase';
+import { getAllergenMatch, ALLERGEN_LEVELS } from '../data/allergenDatabase';
 import { DATA_SOURCES } from '../services/dataSources';
 
 // 데이터에서 고유한 시도 목록 추출
@@ -12,6 +12,19 @@ export function getUniqueCities(data) {
 function speciesOf(item) {
   if (item.speciesList) return item.speciesList;
   return item.species ? [item.species] : [];
+}
+
+// 레코드의 알레르기 등급 = 포함된 수종 중 최댓값.
+// Map.jsx의 팝업(buildAllergenRows)과 같은 규칙이다. 원본 문자열을 그대로
+// getAllergenLevel에 넘기면 "첫 매칭"이 나와서, "은행나무+양버즘나무"가
+// 팝업에는 높음(3)인데 필터·통계에는 보통(2)으로 잡혔다(실측 1,243건).
+// 위험을 실제보다 낮게 표시하는 방향의 오차라 최댓값으로 맞춘다.
+function maxAllergenLevel(item) {
+  const levels = speciesOf(item).map((name) => {
+    const { info } = getAllergenMatch(name);
+    return info ? info.level : 0;
+  });
+  return Math.max(0, ...levels);
 }
 
 // 데이터에서 고유한 수종 목록 추출.
@@ -49,14 +62,12 @@ export function filterData(data, filters) {
 
     // 알레르기 등급 필터
     if (filters.allergenLevels && filters.allergenLevels.length > 0) {
-      const level = getAllergenLevel(item.species);
-      if (!filters.allergenLevels.includes(level)) return false;
+      if (!filters.allergenLevels.includes(maxAllergenLevel(item))) return false;
     }
 
     // 알레르기 유발 수종만 보기
     if (filters.allergenOnly) {
-      const level = getAllergenLevel(item.species);
-      if (level === 0) return false;
+      if (maxAllergenLevel(item) === 0) return false;
     }
 
     return true;
@@ -78,12 +89,15 @@ export function calculateStats(data) {
     }
     const species = item.species || '미확인';
     if (!speciesMap[species]) {
-      speciesMap[species] = { count: 0, treeCount: 0 };
+      speciesMap[species] = { count: 0, treeCount: 0, level: 0 };
     }
     speciesMap[species].count += 1;
     speciesMap[species].treeCount += item.treeCount || item.plantCount || 0;
 
-    const level = getAllergenLevel(species);
+    const level = maxAllergenLevel(item);
+    // 라벨의 등급은 레코드에서 모은다. 라벨 문자열을 다시 조회하면
+    // getAllergenMatch가 첫 매칭만 돌려줘 복수 수종 라벨에서 등급이 낮아진다.
+    speciesMap[species].level = Math.max(speciesMap[species].level, level);
     levelCounts[level] += 1;
 
     // 소스별 카운트
@@ -96,7 +110,7 @@ export function calculateStats(data) {
       name,
       count: stats.count,
       treeCount: stats.treeCount,
-      level: getAllergenLevel(name),
+      level: stats.level,
     }))
     .sort((a, b) => b.count - a.count);
 
