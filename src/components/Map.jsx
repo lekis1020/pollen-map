@@ -292,6 +292,9 @@ export default function Map({ data, onStreetViewClick, geo }) {
     setGpsState('loading');
     setGpsError(null);
     geo.request();
+    // geo 객체는 매 렌더 새로 만들어지므로 [geo]로 잡으면 이 콜백이 매번 바뀐다.
+    // request는 훅 안에서 useCallback([])이라 안정적이니 그것만 의존한다.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [geo.request]);
 
   // GPS 현재 위치 기능
@@ -531,7 +534,9 @@ export default function Map({ data, onStreetViewClick, geo }) {
       if (pollTimer) clearTimeout(pollTimer);
       mapInstanceRef.current = null;
     };
-  }, []);
+    // placeLocationMarker는 useCallback([])이라 참조가 안정적이다 —
+    // 의존성에 넣어도 지도가 다시 초기화되지 않는다.
+  }, [placeLocationMarker]);
 
   // 폴리라인 + 싱글톤 마커 렌더
   useEffect(() => {
