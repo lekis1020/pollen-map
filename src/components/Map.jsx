@@ -126,6 +126,50 @@ export default function Map({ data, onStreetViewClick, geo }) {
   const [gpsError, setGpsError] = useState(null);
   const [showPermissionGuide, setShowPermissionGuide] = useState(false);
 
+  // 현재 열린 팝업의 "로드뷰 보기" 동작. 팝업 콘텐츠가 문자열이라 리스너를
+  // 직접 달 수 없어, 아래 위임 핸들러가 이 ref를 통해 호출한다.
+  const roadviewHandlerRef = useRef(null);
+
+  const closeInfoWindow = useCallback(() => {
+    if (infoWindowRef.current) {
+      try { infoWindowRef.current.close(); } catch {}
+      infoWindowRef.current = null;
+    }
+    roadviewHandlerRef.current = null;
+  }, []);
+
+  // 팝업은 마커가 아니라 좌표에 고정한다. 뷰포트가 바뀌면 마커는 전부 파괴·재생성
+  // 되는데, 마커에 묶어 두면 팝업이 죽은 마커에 매달린다.
+  const openInfoWindow = useCallback((map, coord, content, onRoadview) => {
+    closeInfoWindow();
+    const iw = new window.naver.maps.InfoWindow({
+      content,
+      borderWidth: 0,
+      backgroundColor: 'transparent',
+      anchorSize: new window.naver.maps.Size(0, 0),
+      pixelOffset: new window.naver.maps.Point(0, -10),
+    });
+    iw.open(map, coord);
+    infoWindowRef.current = iw;
+    roadviewHandlerRef.current = onRoadview || null;
+  }, [closeInfoWindow]);
+
+  // 팝업 안 버튼은 이벤트 위임으로 받는다.
+  // 예전에는 setTimeout(50ms) 뒤 getElementById로 리스너를 붙였는데, 콘텐츠가
+  // 아직 DOM에 없으면 조용히 실패하고 리스너도 회수되지 않았다.
+  useEffect(() => {
+    const onDocClick = (e) => {
+      const t = e.target;
+      if (typeof t?.closest !== 'function') return;
+      if (t.closest('.tree-popup-close')) { closeInfoWindow(); return; }
+      if (t.closest('.street-view-btn')) roadviewHandlerRef.current?.();
+    };
+    document.addEventListener('click', onDocClick);
+    return () => document.removeEventListener('click', onDocClick);
+  }, [closeInfoWindow]);
+
+  useEffect(() => closeInfoWindow, [closeInfoWindow]);
+
   // 위치 마커를 지도에 표시하는 공통 함수
   const placeLocationMarker = useCallback((lat, lng, accuracy, zoomTo, approximate = false) => {
     const map = mapInstanceRef.current;
@@ -389,6 +433,11 @@ export default function Map({ data, onStreetViewClick, geo }) {
     };
   }, []);
 
+  // 표시 대상이 바뀌면 열려 있던 팝업은 더 이상 유효하지 않다.
+  // 뷰포트(bounds) 변경으로는 닫지 않는다 — 지도를 조금만 움직여도 팝업이
+  // 사라지던 결함의 원인이 바로 그것이었다.
+  useEffect(() => { closeInfoWindow(); }, [grouped, closeInfoWindow]);
+
   // Info content for individual tree marker
   const buildMarkerInfo = useCallback((item) => {
     let rows = `
@@ -413,11 +462,12 @@ export default function Map({ data, onStreetViewClick, geo }) {
           <span class="tree-popup-eyebrow">개별 가로수</span>
           <h3>${escapeHtml(item.locationName || item.roadName) || '도로명 미상'}</h3>
         </div>
+        <button type="button" class="tree-popup-close" aria-label="팝업 닫기">&times;</button>
       </div>
       <table><tbody>${rows}</tbody></table>
       ${buildQualityNote(item)}
       ${sourceNote}
-      <button class="street-view-btn" id="naver-sv-btn">로드뷰 보기</button>
+      <button type="button" class="street-view-btn">로드뷰 보기</button>
     </div>`;
   }, []);
 
@@ -443,6 +493,7 @@ export default function Map({ data, onStreetViewClick, geo }) {
           <span class="tree-popup-eyebrow">국유림 명품숲</span>
           <h3>${item.locationName}</h3>
         </div>
+        <button type="button" class="tree-popup-close" aria-label="팝업 닫기">&times;</button>
       </div>
       <table><tbody>${rows}</tbody></table>
       <p class="popup-source-note">출처: 산림청 국유림 명품숲 선정 현황(15038042) · 좌표는 Naver Cloud Geocoding 대표지점입니다.</p>
@@ -468,11 +519,12 @@ export default function Map({ data, onStreetViewClick, geo }) {
           <span class="tree-popup-eyebrow">가로수길 구간</span>
           <h3>${escapeHtml(pl.roadName) || '도로명 미상'}</h3>
         </div>
+        <button type="button" class="tree-popup-close" aria-label="팝업 닫기">&times;</button>
       </div>
       <table><tbody>${rows}</tbody></table>
       ${buildQualityNote(pl.representative || pl)}
       ${sourceNote}
-      <button class="street-view-btn" id="naver-sv-btn">대표지점 로드뷰</button>
+      <button type="button" class="street-view-btn">대표지점 로드뷰</button>
     </div>`;
   }, []);
 
@@ -518,6 +570,10 @@ export default function Map({ data, onStreetViewClick, geo }) {
       window.naver.maps.Event.addListener(map, 'idle', updateBounds);
       updateBounds();
 
+      // 지도의 빈 곳을 누르면 팝업을 닫는다. 팝업에 닫기 버튼이 생기기 전에는
+      // "지도를 움직이면 닫힌다"가 사실상 유일한 닫기 수단이었다.
+      window.naver.maps.Event.addListener(map, 'click', () => closeInfoWindow());
+
       // 지도 길게 누르기 → 수동 위치 지정
       window.naver.maps.Event.addListener(map, 'rightclick', (e) => {
         placeLocationMarker(e.coord.lat(), e.coord.lng(), 0, null);
@@ -534,9 +590,9 @@ export default function Map({ data, onStreetViewClick, geo }) {
       if (pollTimer) clearTimeout(pollTimer);
       mapInstanceRef.current = null;
     };
-    // placeLocationMarker는 useCallback([])이라 참조가 안정적이다 —
+    // placeLocationMarker·closeInfoWindow는 useCallback([])이라 참조가 안정적이다 —
     // 의존성에 넣어도 지도가 다시 초기화되지 않는다.
-  }, [placeLocationMarker]);
+  }, [placeLocationMarker, closeInfoWindow]);
 
   // 폴리라인 + 싱글톤 마커 렌더
   useEffect(() => {
@@ -552,9 +608,9 @@ export default function Map({ data, onStreetViewClick, geo }) {
     markersRef.current = [];
     polylinesRef.current.forEach((p) => { try { p.setMap(null); } catch {} });
     polylinesRef.current = [];
-    if (infoWindowRef.current) {
-      try { infoWindowRef.current.close(); } catch {}
-    }
+    // 팝업은 여기서 닫지 않는다. 이 effect는 bounds가 바뀔 때마다(= 지도를
+    // 움직일 때마다) 도는데, 팝업을 열면 지도가 자동으로 이동하므로 방금 연
+    // 팝업을 스스로 닫아 버렸다. 팝업 정리는 grouped 변경 effect가 맡는다.
 
     const { polylines, markers: singletons } = grouped;
 
@@ -577,24 +633,8 @@ export default function Map({ data, onStreetViewClick, geo }) {
         clickable: true,
       });
       window.naver.maps.Event.addListener(polyline, 'click', (e) => {
-        if (infoWindowRef.current) {
-          try { infoWindowRef.current.close(); } catch {}
-        }
-        const infoWindow = new window.naver.maps.InfoWindow({
-          content: buildPolylineInfo(pl),
-          borderWidth: 0,
-          backgroundColor: 'transparent',
-          anchorSize: new window.naver.maps.Size(0, 0),
-          pixelOffset: new window.naver.maps.Point(0, -10),
-        });
-        infoWindow.open(map, e.coord);
-        infoWindowRef.current = infoWindow;
-        setTimeout(() => {
-          const btn = document.getElementById('naver-sv-btn');
-          if (btn && onStreetViewClick) {
-            btn.addEventListener('click', () => onStreetViewClick(pl.representative));
-          }
-        }, 50);
+        openInfoWindow(map, e.coord, buildPolylineInfo(pl),
+          onStreetViewClick ? () => onStreetViewClick(pl.representative) : null);
       });
       return polyline;
     });
@@ -626,24 +666,13 @@ export default function Map({ data, onStreetViewClick, geo }) {
         title: item.locationName || item.roadName,
       });
       window.naver.maps.Event.addListener(marker, 'click', () => {
-        if (infoWindowRef.current) {
-          try { infoWindowRef.current.close(); } catch {}
-        }
-        const infoWindow = new window.naver.maps.InfoWindow({
-          content: isFamousForest ? buildFamousForestInfo(item) : buildMarkerInfo(item),
-          borderWidth: 0,
-          backgroundColor: 'transparent',
-          anchorSize: new window.naver.maps.Size(0, 0),
-          pixelOffset: new window.naver.maps.Point(0, -10),
-        });
-        infoWindow.open(map, marker);
-        infoWindowRef.current = infoWindow;
-        if (!isFamousForest) setTimeout(() => {
-          const btn = document.getElementById('naver-sv-btn');
-          if (btn && onStreetViewClick) {
-            btn.addEventListener('click', () => onStreetViewClick(item));
-          }
-        }, 50);
+        openInfoWindow(
+          map,
+          new window.naver.maps.LatLng(item.latitude, item.longitude),
+          isFamousForest ? buildFamousForestInfo(item) : buildMarkerInfo(item),
+          // 명품숲 팝업에는 로드뷰 버튼이 없다.
+          !isFamousForest && onStreetViewClick ? () => onStreetViewClick(item) : null,
+        );
       });
       return marker;
     });
@@ -694,7 +723,7 @@ export default function Map({ data, onStreetViewClick, geo }) {
         clusterRef.current = null;
       }
     };
-  }, [grouped, bounds, onStreetViewClick, buildMarkerInfo, buildFamousForestInfo, buildPolylineInfo, mapReady]);
+  }, [grouped, bounds, onStreetViewClick, openInfoWindow, buildMarkerInfo, buildFamousForestInfo, buildPolylineInfo, mapReady]);
 
   return (
     <div className="map-wrapper">
