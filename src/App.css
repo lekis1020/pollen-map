@@ -273,6 +273,35 @@ html, body, #root {
   color: var(--tp-text-soft);
 }
 
+/* .tree-popup-header는 원래부터 space-between이라 오른쪽 자리가 비어 있었다.
+   그 자리에 닫기 버튼을 넣는다 — 이전에는 "지도를 움직이면 닫힌다"가 사실상
+   유일한 닫기 수단이었다. */
+.tree-popup-close {
+  flex-shrink: 0;
+  appearance: none;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--tp-text-soft);
+  font-size: 18px;
+  line-height: 1;
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: background 160ms ease, color 160ms ease, border-color 160ms ease;
+}
+
+.tree-popup-close:hover {
+  background: #f1f5f9;
+  color: var(--tp-text);
+}
+
+.tree-popup-close:focus-visible {
+  outline: none;
+  border-color: #0f766e;
+  box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.18);
+}
+
 .tree-popup table {
   width: 100%;
   border-collapse: collapse;
