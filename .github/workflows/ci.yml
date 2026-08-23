@@ -1,0 +1,41 @@
+# lint·테스트·빌드 게이트.
+# Vercel은 프리뷰 배포만 확인해 주므로 코드 검사는 여기서 한다.
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+# 같은 브랜치에 연달아 push하면 앞선 실행은 취소한다.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          # 로컬 개발 환경과 같은 메이저 버전.
+          node-version: '22'
+          cache: npm
+
+      - run: npm ci
+
+      # 세 단계를 나눠 두면 어디서 깨졌는지 로그를 열지 않고도 보인다.
+      # 하나가 실패해도 나머지를 돌려 한 번에 전체 상태를 알 수 있게 한다.
+      - name: Lint
+        run: npm run lint
+
+      - name: Test
+        if: '!cancelled()'
+        run: npm test
+
+      - name: Build
+        if: '!cancelled()'
+        run: npm run build
