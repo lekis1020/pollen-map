@@ -31,7 +31,8 @@ html, body, #root {
   z-index: 1000;
 }
 
-.sidebar-toggle {
+.sidebar-toggle,
+.refresh-button {
   appearance: none;
   background: #f1f5f9;
   border: 1px solid transparent;
@@ -47,12 +48,14 @@ html, body, #root {
   justify-content: center;
 }
 
-.sidebar-toggle:hover {
+.sidebar-toggle:hover,
+.refresh-button:hover {
   background: #e2e8f0;
   color: #0f172a;
 }
 
-.sidebar-toggle:focus-visible {
+.sidebar-toggle:focus-visible,
+.refresh-button:focus-visible {
   outline: none;
   border-color: #0f766e;
   box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.18);
@@ -84,6 +87,10 @@ html, body, #root {
 .header-info {
   font-size: 12.5px;
   font-weight: 500;
+  /* 배지와 새로고침 버튼을 한 줄에 나란히 둔다. */
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .loading-badge,
