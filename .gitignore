@@ -10,6 +10,8 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
+# src/pwa.test.js가 산출물 검사용으로 만드는 임시 빌드
+.pwa-test-dist
 *.local
 
 # Environment
