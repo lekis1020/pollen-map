@@ -138,6 +138,21 @@ function App() {
             {loadingStage === 'processing' && ' (처리 중...)'}
             {loading && !loadingStage && rawData.length > 0 ? ' (로딩 중...)' : ''}
           </span>
+          {/*
+            홈 화면에 설치하면 주소창이 사라져 브라우저 새로고침 버튼도 같이
+            없어진다. 설치 여부를 감지해 조건부로 띄우지 않는 이유는, 감지가
+            틀렸을 때 정작 필요한 설치 사용자에게 버튼이 안 보이기 때문이다.
+            브라우저 사용자에게 하나 중복되는 쪽이 안전한 실패다.
+            좌표는 useGeolocation이 세션에 남기므로 리로드해도 유지된다.
+          */}
+          <button
+            className="refresh-button"
+            onClick={() => window.location.reload()}
+            aria-label="새로고침"
+            title="새로고침"
+          >
+            {'\u21bb'}
+          </button>
         </div>
       </header>
 
