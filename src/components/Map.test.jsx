@@ -13,7 +13,13 @@ function installNaverMock() {
 
   class InfoWindow {
     constructor(opts) { this.opts = opts; this.openCalls = []; this.closeCalls = 0; infoWindows.push(this); }
-    open(map, anchor) { this.openCalls.push(anchor); }
+    open(map, anchor) {
+      this.openCalls.push(anchor);
+      // 실제 SDK처럼 콘텐츠를 DOM으로 만들어 둔다. 버튼 바인딩이 이 위에서 일어난다.
+      this.el = document.createElement('div');
+      this.el.innerHTML = this.opts.content;
+    }
+    getContentElement() { return this.el; }
     close() { this.closeCalls += 1; }
   }
   const noop = class { constructor() {} setMap() {} getElement() { return null; } };
@@ -145,13 +151,32 @@ describe('마커 팝업(InfoWindow) 수명', () => {
   });
 });
 
-describe('팝업 마크업', () => {
-  it('닫기 버튼을 포함한다', async () => {
+describe('팝업 버튼 동작', () => {
+  // 마크업에 버튼이 있는지만 보면 부족하다. 네이버 InfoWindow는 내부 클릭의
+  // 전파를 오버레이 래퍼에서 끊기 때문에 document 위임으로는 아무 일도 일어나지
+  // 않는다(프로덕션에서 실제로 이렇게 깨졌다). 클릭이 동작하는지까지 본다.
+  it('닫기 버튼을 누르면 팝업이 닫힌다', async () => {
     vi.useFakeTimers();
     render(<Map data={[tree()]} onStreetViewClick={() => {}} geo={geoStub} />);
     await act(async () => { vi.advanceTimersByTime(400); });
     const iw = await openPopup();
-    expect(iw.opts.content).toContain('tree-popup-close');
+    const btn = iw.getContentElement().querySelector('.tree-popup-close');
+    expect(btn, '닫기 버튼이 없다').toBeTruthy();
+    await act(async () => { btn.dispatchEvent(new MouseEvent('click', { bubbles: true })); });
+    expect(iw.closeCalls, '닫기 버튼이 팝업을 닫지 못했다').toBeGreaterThan(0);
+  });
+
+  it('로드뷰 버튼을 누르면 onStreetViewClick이 불린다', async () => {
+    vi.useFakeTimers();
+    const onStreetViewClick = vi.fn();
+    render(<Map data={[tree()]} onStreetViewClick={onStreetViewClick} geo={geoStub} />);
+    await act(async () => { vi.advanceTimersByTime(400); });
+    const iw = await openPopup();
+    const btn = iw.getContentElement().querySelector('.street-view-btn');
+    expect(btn, '로드뷰 버튼이 없다').toBeTruthy();
+    await act(async () => { btn.dispatchEvent(new MouseEvent('click', { bubbles: true })); });
+    expect(onStreetViewClick).toHaveBeenCalledTimes(1);
+    expect(onStreetViewClick.mock.calls[0][0]).toMatchObject({ id: 't1' });
   });
 
   it('로드뷰 버튼을 고정 id가 아닌 클래스로 식별한다', async () => {
