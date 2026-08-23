@@ -126,16 +126,11 @@ export default function Map({ data, onStreetViewClick, geo }) {
   const [gpsError, setGpsError] = useState(null);
   const [showPermissionGuide, setShowPermissionGuide] = useState(false);
 
-  // 현재 열린 팝업의 "로드뷰 보기" 동작. 팝업 콘텐츠가 문자열이라 리스너를
-  // 직접 달 수 없어, 아래 위임 핸들러가 이 ref를 통해 호출한다.
-  const roadviewHandlerRef = useRef(null);
-
   const closeInfoWindow = useCallback(() => {
     if (infoWindowRef.current) {
       try { infoWindowRef.current.close(); } catch {}
       infoWindowRef.current = null;
     }
-    roadviewHandlerRef.current = null;
   }, []);
 
   // 팝업은 마커가 아니라 좌표에 고정한다. 뷰포트가 바뀌면 마커는 전부 파괴·재생성
@@ -151,21 +146,22 @@ export default function Map({ data, onStreetViewClick, geo }) {
     });
     iw.open(map, coord);
     infoWindowRef.current = iw;
-    roadviewHandlerRef.current = onRoadview || null;
-  }, [closeInfoWindow]);
 
-  // 팝업 안 버튼은 이벤트 위임으로 받는다.
-  // 예전에는 setTimeout(50ms) 뒤 getElementById로 리스너를 붙였는데, 콘텐츠가
-  // 아직 DOM에 없으면 조용히 실패하고 리스너도 회수되지 않았다.
-  useEffect(() => {
-    const onDocClick = (e) => {
-      const t = e.target;
-      if (typeof t?.closest !== 'function') return;
-      if (t.closest('.tree-popup-close')) { closeInfoWindow(); return; }
-      if (t.closest('.street-view-btn')) roadviewHandlerRef.current?.();
-    };
-    document.addEventListener('click', onDocClick);
-    return () => document.removeEventListener('click', onDocClick);
+    // 팝업 안 버튼은 콘텐츠 엘리먼트에 직접 리스너를 단다.
+    //
+    // document 위임은 쓸 수 없다 — 네이버 InfoWindow가 내부 클릭의 전파를
+    // 오버레이 래퍼에서 끊어서 document까지 올라오지 않는다(실측: 조상 3까지만
+    // 도달). 지도가 팝업 클릭에 반응하지 않는 것도 같은 이유다.
+    //
+    // 예전 방식(고정 id + setTimeout(50ms) + getElementById)도 쓰지 않는다.
+    // getContentElement()는 open() 직후 바로 유효해서 경합이 없고, 엘리먼트가
+    // 팝업과 함께 버려지므로 리스너도 같이 사라진다.
+    const el = iw.getContentElement?.();
+    if (el) {
+      el.querySelector('.tree-popup-close')?.addEventListener('click', () => closeInfoWindow());
+      const sv = el.querySelector('.street-view-btn');
+      if (sv && onRoadview) sv.addEventListener('click', () => onRoadview());
+    }
   }, [closeInfoWindow]);
 
   useEffect(() => closeInfoWindow, [closeInfoWindow]);
