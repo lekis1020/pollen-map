@@ -8,7 +8,9 @@ export default defineConfig([
   // public/MarkerClustering.js는 네이버가 배포한 서드파티 라이브러리다(Apache 2.0).
   // index.html이 <script>로 직접 싣는 전역 스크립트라 모듈 규칙이 맞지 않고,
   // 우리가 고칠 파일도 아니라 검사 대상에서 뺀다.
-  globalIgnores(['dist', 'public/MarkerClustering.js']),
+  // .pwa-test-dist는 src/pwa.test.js가 산출물을 검사하려고 만드는 임시 빌드다.
+  // dist와 같은 이유로 검사하지 않는다 — 우리가 쓴 코드가 아니라 번들 결과물이다.
+  globalIgnores(['dist', '.pwa-test-dist', 'public/MarkerClustering.js']),
   {
     files: ['**/*.{js,jsx}'],
     extends: [

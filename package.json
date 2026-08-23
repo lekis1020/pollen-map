@@ -14,6 +14,7 @@
     "geocode:forests": "node scripts/geocode-famous-forests.mjs",
     "audit:data": "node scripts/audit-data.mjs",
     "discover:pollen": "node scripts/pollen-discovery.mjs",
+    "icons": "bash scripts/gen-icons.sh",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -36,6 +37,11 @@
     "jsdom": "^29.1.1",
     "vercel": "^57.0.0",
     "vite": "^8.0.1",
-    "vitest": "^4.1.10"
+    "vite-plugin-pwa": "^1.3.0",
+    "vitest": "^4.1.10",
+    "workbox-core": "^7.4.1",
+    "workbox-precaching": "^7.4.1",
+    "workbox-routing": "^7.4.1",
+    "workbox-window": "^7.4.1"
   }
 }

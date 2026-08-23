@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="가로수와 꽃가루">
+  <!--
+    설치 아이콘 소스. PNG는 scripts/gen-icons.sh로 이 파일에서 생성한다.
+
+    배경은 모서리를 둥글리지 않고 꽉 채운다 — maskable 아이콘은 OS가 자기
+    모양대로 잘라내고, iOS도 apple-touch-icon을 알아서 둥글린다. 여기서 미리
+    둥글리면 이중으로 잘려 테두리가 어색해진다.
+
+    나무와 꽃가루는 전부 중심 반지름 205px(가로 80%) 안에 둔다. maskable
+    안전영역이라, 이 안에 있으면 어떤 모양으로 잘려도 잘리지 않는다.
+    그래서 any/maskable/apple-touch를 한 소스로 쓴다.
+  -->
+  <rect width="512" height="512" fill="#0f766e"/>
+
+  <!-- 줄기 -->
+  <rect x="242" y="288" width="28" height="148" rx="12" fill="#92400e"/>
+
+  <!-- 수관: 원 세 개를 겹쳐 가로수 실루엣을 만든다.
+       작은 크기에서 잎맥 같은 디테일은 뭉개지므로 덩어리로만 잡는다. -->
+  <circle cx="205" cy="285" r="70" fill="#34d399"/>
+  <circle cx="307" cy="285" r="70" fill="#34d399"/>
+  <circle cx="256" cy="243" r="95" fill="#34d399"/>
+
+  <!-- 꽃가루: 오른쪽 위로 흩날리는 방향을 준다. 등급 경고색(호박색) 계열이라
+       앱의 배지 팔레트와 이어진다. -->
+  <circle cx="360" cy="150" r="15" fill="#fde68a"/>
+  <circle cx="404" cy="204" r="10" fill="#fde68a" opacity="0.85"/>
+  <circle cx="345" cy="96" r="8" fill="#fde68a" opacity="0.7"/>
+</svg>
