@@ -452,3 +452,10 @@ html, body, #root {
     font-size: 16px;
   }
 }
+
+.error-report-link {
+  color: #c0392b;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}

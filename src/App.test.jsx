@@ -52,3 +52,32 @@ describe('헤더 새로고침 버튼', () => {
     expect(reload).toHaveBeenCalledTimes(1);
   });
 });
+
+describe('제보 창구', () => {
+  afterEach(() => {
+    cleanup();
+    vi.clearAllMocks();
+  });
+
+  it('사이드바에 제보·문의 패널이 있다', () => {
+    render(<App />);
+    expect(
+      screen.getByRole('link', { name: /lekis1020@gmail\.com/ })
+    ).toBeInTheDocument();
+  });
+
+  // 데이터 로드가 깨진 순간이 사용자가 실제로 제보하고 싶어지는 순간이다.
+  // 그때 사이드바를 뒤지게 하지 말고 배너에서 바로 갈 수 있어야 한다.
+  it('데이터 로드가 실패하면 에러 배너에서도 제보로 갈 수 있다', async () => {
+    const { fetchAllData } = await import('./services/api');
+    fetchAllData.mockRejectedValueOnce(new Error('네트워크 오류'));
+
+    render(<App />);
+
+    const banner = await screen.findByText(/데이터 로드 실패/);
+    const link = banner
+      .closest('.error-banner')
+      .querySelector('a[href^="mailto:"]');
+    expect(link).not.toBeNull();
+  });
+});

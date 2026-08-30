@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { compareTimeline, compareRoadName } from '../utils/roadviewCheck.js';
+import { naverPanoramaUrl } from '../utils/naverLinks.js';
 import './StreetViewModal.css';
 
 const EARTH_RADIUS_M = 6371000;
@@ -76,7 +77,7 @@ export default function StreetViewModal({ treeData, onClose }) {
   const [loading, setLoading] = useState(true);
   const [mapType, setMapType] = useState('normal'); // 'normal' | 'hybrid'
   // 파노라마 메타데이터. 이미지는 취득·저장하지 않고 이것만 화면에서 1회 사용한다.
-  const [panoMeta, setPanoMeta] = useState(null); // { panoId, address, photodate }
+  const [panoMeta, setPanoMeta] = useState(null); // { panoId, address, photodate, pov }
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -173,6 +174,8 @@ export default function StreetViewModal({ treeData, onClose }) {
                 panoId: loc.panoId || null,
                 address: loc.address || loc.title || null,
                 photodate: loc.photodate || null,
+                // 새 창 링크의 기본 시점. 클릭 시점의 시점은 아래에서 다시 읽는다.
+                pov: typeof panorama.getPov === 'function' ? panorama.getPov() : null,
               });
             }
           } catch {
@@ -333,6 +336,34 @@ export default function StreetViewModal({ treeData, onClose }) {
   // 줌 15는 도시 블록 전체가 보이는 수준이라, 좌표가 바다/산악이어도 주변 컨텍스트를 확인 가능
   const naverMapUrl = `https://map.naver.com/p?c=${treeData.longitude},${treeData.latitude},15,0,0,0,dh`;
   const naverSatelliteUrl = `https://map.naver.com/p?c=${treeData.longitude},${treeData.latitude},16,0,0,0,sw`;
+
+  // 이 모달 안의 파노라마를 네이버 지도에서 그대로 이어 보는 링크.
+  // panoId가 있어야 특정 파노라마를 지정할 수 있어서, 못 얻으면 링크를 띄우지 않는다.
+  const buildExternalUrl = (pov) =>
+    naverPanoramaUrl({
+      panoId: panoMeta?.panoId,
+      lat: actualPosition?.lat,
+      lng: actualPosition?.lng,
+      ...(pov ?? {}),
+    });
+  const externalPanoUrl = error ? null : buildExternalUrl(panoMeta?.pov);
+
+  // href는 로드뷰가 처음 잡혔을 때의 시점이라 가운데클릭·복사에도 쓸 수 있게 남겨둔다.
+  // 다만 사용자가 화면을 돌려봤다면 그 방향으로 이어 봐야 하므로,
+  // 실제 클릭에서는 지금 보고 있는 시점을 다시 읽어 연다.
+  const handleOpenExternal = (e) => {
+    const pano = panoramaRef.current;
+    if (!pano || typeof pano.getPov !== 'function') return;
+    let live = null;
+    try {
+      live = buildExternalUrl(pano.getPov());
+    } catch {
+      return;
+    }
+    if (!live || live === e.currentTarget.href) return;
+    e.preventDefault();
+    window.open(live, '_blank', 'noopener,noreferrer');
+  };
 
   return (
     <div className="street-view-overlay" onClick={handleBackdropClick} role="presentation">
@@ -519,9 +550,25 @@ export default function StreetViewModal({ treeData, onClose }) {
           </div>
         )}
 
-        <div className={`street-view-info-bar sv-info-bar--${infoBar.tone}`} role="status" aria-live="polite">
-          <span className="sv-info-icon" aria-hidden="true">{infoBar.icon}</span>
-          <span className="sv-info-text">{infoBar.text}</span>
+        <div className={`street-view-info-bar sv-info-bar--${infoBar.tone}`}>
+          {/* 링크는 상태 문구가 아니므로 aria-live 영역 밖에 둔다 */}
+          <span className="sv-info-status" role="status" aria-live="polite">
+            <span className="sv-info-icon" aria-hidden="true">{infoBar.icon}</span>
+            <span className="sv-info-text">{infoBar.text}</span>
+          </span>
+          {externalPanoUrl && (
+            <a
+              className="sv-info-external"
+              href={externalPanoUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={handleOpenExternal}
+              title="지금 보고 있는 지점·방향 그대로 네이버 지도에서 엽니다"
+            >
+              <span>네이버 지도에서 보기</span>
+              <span className="sv-cta-icon" aria-hidden="true">{ICONS.external}</span>
+            </a>
+          )}
         </div>
       </div>
     </div>
