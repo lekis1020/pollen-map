@@ -1,0 +1,95 @@
+/* ContactPanel — StatsPanel과 같은 healthcare-clean light 톤 */
+.contact-panel {
+  --ct-text: #0f172a;
+  --ct-text-soft: #64748b;
+  --ct-border: #e2e8f0;
+  --ct-surface: #f8fafc;
+  --ct-accent: #0f766e;
+
+  padding: 18px 18px 22px;
+  border-top: 1px solid var(--ct-border);
+  color: var(--ct-text);
+  font-family: inherit;
+}
+
+.contact-panel h3 {
+  margin: 0 0 8px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ct-text);
+  letter-spacing: -0.01em;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.contact-panel h3::before {
+  content: '';
+  width: 3px;
+  height: 14px;
+  border-radius: 2px;
+  background: var(--ct-accent);
+}
+
+.contact-desc {
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--ct-text-soft);
+  margin: 0 0 12px;
+}
+
+.contact-links {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+}
+
+.contact-links a {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 10px;
+  border: 1px solid var(--ct-border);
+  border-radius: 8px;
+  background: var(--ct-surface);
+  color: var(--ct-text);
+  text-decoration: none;
+  font-size: 12.5px;
+  transition: background 160ms ease, border-color 160ms ease;
+}
+
+.contact-links a:hover {
+  background: #f0fdfa;
+  border-color: rgba(15, 118, 110, 0.35);
+}
+
+.contact-links a:focus-visible {
+  outline: none;
+  border-color: var(--ct-accent);
+  box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.18);
+}
+
+.contact-icon {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+  color: var(--ct-text-soft);
+}
+
+.contact-label {
+  font-weight: 600;
+  color: var(--ct-text);
+  flex-shrink: 0;
+}
+
+/* 이메일 주소는 사이드바 320px보다 길어질 수 있다. 줄바꿈 대신 말줄임. */
+.contact-value {
+  color: var(--ct-text-soft);
+  margin-left: auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

@@ -4,10 +4,12 @@ import StreetViewModal from './components/StreetViewModal';
 import FilterPanel from './components/FilterPanel';
 import StatsPanel from './components/StatsPanel';
 import PollenPanel from './components/PollenPanel.jsx';
+import ContactPanel from './components/ContactPanel.jsx';
 import { useGeolocation } from './hooks/useGeolocation.js';
 import { fetchAllData, loadFamousForests, loadSeoulTrees } from './services/api';
 import { getCachedData, setCachedData } from './services/cache';
 import { filterData, getUniqueCities, getUniqueSpecies, calculateStats } from './utils/helpers';
+import { mailHref } from './data/contact.js';
 import './App.css';
 
 function App() {
@@ -165,13 +167,30 @@ function App() {
             speciesList={speciesList}
           />
           <StatsPanel stats={stats} />
+          <ContactPanel />
         </aside>
 
         <main className="main-content">
           <PollenPanel coords={geo.coords} />
           {error && (
             <div className="error-banner">
-              <p>데이터 로드 실패: {error}</p>
+              {/*
+                데이터 로드가 깨진 순간이 사용자가 실제로 제보하고 싶어지는
+                순간이다. 그때 사이드바를 뒤지게 하지 말고 여기서 바로
+                보낼 수 있게 한다 — 오류 메시지를 본문에 미리 채워둔다.
+              */}
+              <p>
+                데이터 로드 실패: {error}
+                {' — '}
+                <a
+                  className="error-report-link"
+                  href={`${mailHref('데이터 로드 실패')}&body=${encodeURIComponent(
+                    `오류 메시지: ${error}`
+                  )}`}
+                >
+                  계속 안 되면 제보해 주세요
+                </a>
+              </p>
               <button onClick={() => window.location.reload()}>
                 다시 시도
               </button>
