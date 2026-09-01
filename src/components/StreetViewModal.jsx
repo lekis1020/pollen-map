@@ -3,6 +3,9 @@ import { compareTimeline, compareRoadName } from '../utils/roadviewCheck.js';
 import { naverPanoramaUrl } from '../utils/naverLinks.js';
 import './StreetViewModal.css';
 
+// 로드뷰가 없을 때 위성 지도의 기본 배율. 건물 하나가 아니라 블록이 보이는 수준.
+const FALLBACK_ZOOM = 17;
+
 const EARTH_RADIUS_M = 6371000;
 function haversineMeters(lat1, lng1, lat2, lng2) {
   const toRad = (d) => (d * Math.PI) / 180;
@@ -230,12 +233,10 @@ export default function StreetViewModal({ treeData, onClose }) {
       new nMaps.LatLng(Math.max(...allLats), Math.max(...allLngs))
     );
 
-    const initialMapType = error ? 'hybrid' : mapType;
-
     const map = new nMaps.Map(miniMapContainerRef.current, {
       center: bounds.getCenter(),
       zoom: 17,
-      mapTypeId: initialMapType === 'hybrid' ? nMaps.MapTypeId.HYBRID : nMaps.MapTypeId.NORMAL,
+      mapTypeId: mapType === 'hybrid' ? nMaps.MapTypeId.HYBRID : nMaps.MapTypeId.NORMAL,
       draggable: true,
       scrollWheel: true,
       zoomControl: true,
@@ -245,7 +246,14 @@ export default function StreetViewModal({ treeData, onClose }) {
       },
     });
     miniMapRef.current = map;
-    map.fitBounds(bounds, { top: 36, right: 36, bottom: 36, left: 36 });
+    // 로드뷰가 없으면 좌표가 가로수 한 점뿐이다. 그 bounds로 fitBounds를 부르면
+    // 최대 배율까지 파고들어 주변이 아무것도 안 보인다.
+    if (actualPosition) {
+      map.fitBounds(bounds, { top: 36, right: 36, bottom: 36, left: 36 });
+    } else {
+      map.setCenter(treePos);
+      map.setZoom(FALLBACK_ZOOM);
+    }
 
     new nMaps.Marker({
       position: treePos, map,
@@ -280,6 +288,12 @@ export default function StreetViewModal({ treeData, onClose }) {
     if (e.target === e.currentTarget) onClose();
   };
 
+  // 로드뷰가 없을 때는 위성이 기본이다 — 지형·건물이 보이는 쪽이 쓸모 있다.
+  // 한 번만 밀어주고, 이후 일반/위성 선택은 사용자에게 맡긴다.
+  useEffect(() => {
+    if (error) setMapType('hybrid');
+  }, [error]);
+
   const toggleMapType = useCallback(() => {
     setMapType((t) => (t === 'normal' ? 'hybrid' : 'normal'));
   }, []);
@@ -312,7 +326,7 @@ export default function StreetViewModal({ treeData, onClose }) {
       return {
         tone: 'danger',
         icon: ICONS.alert,
-        text: '반경 300m 내에 촬영된 로드뷰가 없습니다. 우측 위성지도에서 가로수 위치를 확인하세요.',
+        text: '반경 300m 내에 촬영된 로드뷰가 없습니다. 위성 지도로 대신 보여드립니다.',
       };
     }
     if (distanceMeters === null) {
@@ -333,8 +347,6 @@ export default function StreetViewModal({ treeData, onClose }) {
   };
 
   const infoBar = getInfoBar();
-  // 줌 15는 도시 블록 전체가 보이는 수준이라, 좌표가 바다/산악이어도 주변 컨텍스트를 확인 가능
-  const naverMapUrl = `https://map.naver.com/p?c=${treeData.longitude},${treeData.latitude},15,0,0,0,dh`;
   const naverSatelliteUrl = `https://map.naver.com/p?c=${treeData.longitude},${treeData.latitude},16,0,0,0,sw`;
 
   // 이 모달 안의 파노라마를 네이버 지도에서 그대로 이어 보는 링크.
@@ -448,7 +460,7 @@ export default function StreetViewModal({ treeData, onClose }) {
             </div>
           )}
 
-          <div className="street-view-split">
+          <div className={`street-view-split${error ? ' sv-split--fallback' : ''}`}>
             <div
               className="street-view-panorama"
               ref={containerRef}
@@ -456,35 +468,33 @@ export default function StreetViewModal({ treeData, onClose }) {
             />
 
             {error && (
-              <div className="street-view-fallback" role="status">
+              /*
+                지도가 주인공이므로 카드는 지도 위 오버레이로 내려앉는다.
+                컨테이너는 pointer-events: none이라 카드 밖은 그대로 지도를
+                끌 수 있고, 카드만 클릭을 받는다.
+              */
+              <div className="street-view-fallback">
                 <div className="sv-fallback-card">
                   <div className="sv-fallback-icon" aria-hidden="true">{ICONS.alert}</div>
                   <h4>로드뷰가 제공되지 않는 위치입니다</h4>
                   <p className="sv-fallback-desc">
-                    중심점 + 주변 8방향 후보(약 50–150m)를 모두 시도했지만 촬영된 로드뷰를 찾지 못했습니다.
-                    좌표가 <strong>도로에서 벗어났거나 해상·산악·국경 지역</strong>일 가능성이 있습니다.
+                    주변 8방향(약 50–150m)까지 찾았지만 촬영된 로드뷰가 없습니다.
+                    위성 지도로 주변을 확인하세요.
                   </p>
                   <dl className="sv-fallback-coords">
                     <dt>좌표</dt>
                     <dd>{treeData.latitude.toFixed(5)}, {treeData.longitude.toFixed(5)}</dd>
                   </dl>
                   <div className="sv-fallback-actions">
+                    {/* 일반/위성 전환은 이제 화면 안 토글이 하므로 '일반 지도' 링크는 뺐다. */}
                     <a
                       className="sv-fallback-cta"
                       href={naverSatelliteUrl}
                       target="_blank"
                       rel="noopener noreferrer"
                     >
-                      <span>위성지도에서 확인</span>
+                      <span>네이버 지도에서 열기</span>
                       <span className="sv-cta-icon" aria-hidden="true">{ICONS.external}</span>
-                    </a>
-                    <a
-                      className="sv-fallback-secondary"
-                      href={naverMapUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      일반 지도
                     </a>
                     <button
                       type="button"
@@ -500,7 +510,11 @@ export default function StreetViewModal({ treeData, onClose }) {
               </div>
             )}
 
-            <aside className="street-view-minimap-wrapper" aria-label="미니맵">
+            {/* 폴백에서는 이 지도가 미니맵이 아니라 화면의 본체다. */}
+            <aside
+              className="street-view-minimap-wrapper"
+              aria-label={error ? '위성 지도' : '미니맵'}
+            >
               <div className="street-view-minimap-header">
                 <div className="sv-mini-legend">
                   <span className="sv-mini-legend-item">
@@ -514,7 +528,7 @@ export default function StreetViewModal({ treeData, onClose }) {
                     </span>
                   )}
                 </div>
-                {!error && (
+                {(
                   <button
                     type="button"
                     className="sv-mini-toggle"
