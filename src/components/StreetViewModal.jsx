@@ -78,9 +78,15 @@ export default function StreetViewModal({ treeData, onClose }) {
   const [actualPosition, setActualPosition] = useState(null);
   const [distanceMeters, setDistanceMeters] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [mapType, setMapType] = useState('normal'); // 'normal' | 'hybrid'
+  // null이면 자동 — 로드뷰가 없을 때는 위성이 기본이다(지형·건물이 보이는 쪽이
+  // 쓸모 있다). 사용자가 토글을 누른 뒤에는 그 선택만 따른다.
+  // 이걸 setState로 밀면 지도가 '일반 → 위성'으로 두 번 만들어지고, 사용자가
+  // 일반으로 되돌려도 도로 위성이 됐다. 파생값이라 그 왕복이 없다.
+  const [mapTypeChoice, setMapTypeChoice] = useState(null); // null | 'normal' | 'hybrid'
   // 파노라마 메타데이터. 이미지는 취득·저장하지 않고 이것만 화면에서 1회 사용한다.
   const [panoMeta, setPanoMeta] = useState(null); // { panoId, address, photodate, pov }
+
+  const mapType = mapTypeChoice ?? (error ? 'hybrid' : 'normal');
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -281,22 +287,21 @@ export default function StreetViewModal({ treeData, onClose }) {
       });
     }
 
-    return () => { miniMapRef.current = null; };
+    // 파괴하지 않으면 effect가 돌 때마다 죽은 지도가 컨테이너에 쌓인다.
+    // 프로덕션에서 루트 div가 20개까지 겹쳐 있었다.
+    return () => {
+      try { miniMapRef.current?.destroy?.(); } catch { /* 이미 정리된 경우 */ }
+      miniMapRef.current = null;
+    };
   }, [actualPosition, error, loading, treeData, mapType]);
 
   const handleBackdropClick = (e) => {
     if (e.target === e.currentTarget) onClose();
   };
 
-  // 로드뷰가 없을 때는 위성이 기본이다 — 지형·건물이 보이는 쪽이 쓸모 있다.
-  // 한 번만 밀어주고, 이후 일반/위성 선택은 사용자에게 맡긴다.
-  useEffect(() => {
-    if (error) setMapType('hybrid');
-  }, [error]);
-
   const toggleMapType = useCallback(() => {
-    setMapType((t) => (t === 'normal' ? 'hybrid' : 'normal'));
-  }, []);
+    setMapTypeChoice(mapType === 'normal' ? 'hybrid' : 'normal');
+  }, [mapType]);
 
   const timeline = compareTimeline({
     photodate: panoMeta?.photodate,

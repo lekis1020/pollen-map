@@ -48,6 +48,7 @@ function installNaverMock({ panoId = '6_XH7ynPhSmJkdQrPCKLMA', pov, panoramaFail
         fitBounds() { this.fitBoundsCalls += 1; }
         setZoom(z) { this.zoom = z; }
         setCenter(c) { this.centered = c; }
+        destroy() { this.destroyed = true; }
       },
       Marker: class { constructor() {} },
       Polyline: noop,
@@ -66,6 +67,7 @@ function installNaverMock({ panoId = '6_XH7ynPhSmJkdQrPCKLMA', pov, panoramaFail
 
   return {
     get miniMap() { return miniMaps[miniMaps.length - 1]; },
+    get miniMaps() { return miniMaps; },
     // 파노라마가 실제로 잡혔을 때를 재현한다.
     settle() {
       act(() => {
@@ -192,5 +194,45 @@ describe('로드뷰 미지원 지점의 위성 폴백', () => {
   it('로드뷰가 없으면 파노라마 이어 보기 링크는 뜨지 않는다', () => {
     renderFallback();
     expect(screen.queryByRole('link', { name: /네이버 지도에서 보기/ })).toBeNull();
+  });
+});
+
+// 프로덕션에서 미니맵 컨테이너 안에 네이버 지도 루트가 20개까지 쌓여 있었다.
+// effect가 다시 돌 때마다 새 지도를 만들면서 이전 것을 파괴하지 않은 탓이다.
+describe('미니맵 인스턴스 수명', () => {
+  it('지도 종류를 바꾸면 이전 지도를 파괴한다', () => {
+    const mock = installNaverMock();
+    render(<StreetViewModal treeData={TREE} onClose={() => {}} />);
+    mock.settle();
+
+    const first = mock.miniMap;
+    fireEvent.click(screen.getByRole('button', { name: /일반|위성/ }));
+
+    expect(mock.miniMaps.length).toBeGreaterThan(1);
+    expect(first.destroyed).toBe(true);
+  });
+
+  it('모달을 닫을 때도 지도를 파괴한다', () => {
+    const mock = installNaverMock();
+    const { unmount } = render(<StreetViewModal treeData={TREE} onClose={() => {}} />);
+    mock.settle();
+    const map = mock.miniMap;
+
+    unmount();
+    expect(map.destroyed).toBe(true);
+  });
+
+  // 폴백에서 위성을 기본으로 미는 것을 setState로 하면 지도가 한 번 더
+  // 만들어지고(일반 → 위성), 사용자가 일반으로 되돌려도 도로 위성이 됐다.
+  it('폴백에서 위성이 기본이지만 사용자가 일반으로 바꾸면 유지된다', () => {
+    installNaverMock({ panoramaFails: true });
+    render(<StreetViewModal treeData={TREE} onClose={() => {}} />);
+
+    const toggle = () => screen.getByRole('button', { name: /일반|위성/ });
+    expect(toggle()).toHaveAttribute('aria-pressed', 'true');
+
+    fireEvent.click(toggle());
+    expect(toggle()).toHaveAttribute('aria-pressed', 'false');
+    expect(toggle()).toHaveTextContent('위성');
   });
 });
