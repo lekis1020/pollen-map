@@ -706,3 +706,50 @@
     margin-left: 0;
   }
 }
+
+/* === 로드뷰 미지원: 위성 지도가 주인공 === */
+.sv-split--fallback {
+  position: relative;
+}
+
+/* 미니맵 자리(flex: 0 0 320px)를 전체로 풀어 큰 지도로 쓴다. */
+.sv-split--fallback .street-view-minimap-wrapper {
+  flex: 1 1 auto;
+  max-width: none;
+  min-width: 0;
+  border-left: none;
+}
+
+/* 카드는 지도 위에 얹힌다. 컨테이너는 클릭을 통과시켜 지도를 계속 끌 수 있게
+   하고, 카드만 클릭을 받는다. */
+.sv-split--fallback .street-view-fallback {
+  position: absolute;
+  left: 16px;
+  bottom: 16px;
+  z-index: 10;
+  flex: none;
+  padding: 0;
+  background: none;
+  pointer-events: none;
+  max-width: min(360px, calc(100% - 32px));
+}
+
+.sv-split--fallback .sv-fallback-card {
+  pointer-events: auto;
+  max-width: none;
+  box-shadow: 0 12px 32px -10px rgba(15, 23, 42, 0.35), 0 0 0 1px rgba(15, 23, 42, 0.08);
+}
+
+@media (max-width: 860px) {
+  /* 좁은 화면에서는 지도가 세로 전체를 쓰고, 카드는 아래에 눕는다. */
+  .sv-split--fallback .street-view-minimap-wrapper {
+    height: 100%;
+  }
+
+  .sv-split--fallback .street-view-fallback {
+    left: 12px;
+    right: 12px;
+    bottom: 12px;
+    max-width: none;
+  }
+}

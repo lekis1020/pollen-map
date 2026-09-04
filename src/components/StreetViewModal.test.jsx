@@ -14,13 +14,19 @@ const TREE = {
   referenceDate: '2025-12-31',
 };
 
-// 네이버 지도 API 최소 목. 여기서 보려는 건 "새 창 로드뷰 링크" 하나다.
-function installNaverMock({ panoId = '6_XH7ynPhSmJkdQrPCKLMA', pov } = {}) {
+// 네이버 지도 API 최소 목.
+// panoramaFails: 로드뷰가 없는 지점을 재현한다. 실제 코드는 후보 9곳을
+// 모두 시도하고 전부 실패하면 error 상태로 떨어진다.
+function installNaverMock({ panoId = '6_XH7ynPhSmJkdQrPCKLMA', pov, panoramaFails = false } = {}) {
   const listeners = [];
   const noop = class { constructor() {} setMap() {} fitBounds() {} };
+  const miniMaps = [];
 
   class Panorama {
-    constructor() { this.pov = pov ?? { pan: 0, tilt: 0, fov: 80 }; }
+    constructor() {
+      if (panoramaFails) throw new Error('no panorama here');
+      this.pov = pov ?? { pan: 0, tilt: 0, fov: 80 };
+    }
     getPosition() { return { lat: () => 37.5699122, lng: () => 126.9768465 }; }
     getLocation() {
       return { panoId, address: '서울 종로구 세종로', photodate: '2026-04-13 09:56:32' };
@@ -31,7 +37,18 @@ function installNaverMock({ panoId = '6_XH7ynPhSmJkdQrPCKLMA', pov } = {}) {
   window.naver = {
     maps: {
       Panorama,
-      Map: class { constructor() {} fitBounds() {} },
+      Map: class {
+        constructor(el, opts) {
+          this.opts = opts;
+          this.fitBoundsCalls = 0;
+          this.zoom = null;
+          this.centered = null;
+          miniMaps.push(this);
+        }
+        fitBounds() { this.fitBoundsCalls += 1; }
+        setZoom(z) { this.zoom = z; }
+        setCenter(c) { this.centered = c; }
+      },
       Marker: class { constructor() {} },
       Polyline: noop,
       LatLng: class { constructor(lat, lng) { this.y = lat; this.x = lng; } lat() { return this.y; } lng() { return this.x; } },
@@ -48,6 +65,7 @@ function installNaverMock({ panoId = '6_XH7ynPhSmJkdQrPCKLMA', pov } = {}) {
   };
 
   return {
+    get miniMap() { return miniMaps[miniMaps.length - 1]; },
     // 파노라마가 실제로 잡혔을 때를 재현한다.
     settle() {
       act(() => {
@@ -116,6 +134,63 @@ describe('네이버 지도에서 로드뷰 이어 보기', () => {
     render(<StreetViewModal treeData={TREE} onClose={() => {}} />);
     mock.settle();
 
+    expect(screen.queryByRole('link', { name: /네이버 지도에서 보기/ })).toBeNull();
+  });
+});
+
+// 로드뷰가 없는 지점에서도 사용자는 "그래서 여기가 어디냐"를 봐야 한다.
+// 이전에는 텍스트 카드가 주인공 자리를 차지하고 위성 지도는 옆의 작은
+// 상자에만 있었다.
+describe('로드뷰 미지원 지점의 위성 폴백', () => {
+  function renderFallback() {
+    const mock = installNaverMock({ panoramaFails: true });
+    render(<StreetViewModal treeData={TREE} onClose={() => {}} />);
+    return mock;
+  }
+
+  it('위성 지도가 주인공 자리를 차지한다', () => {
+    const { container } = { container: document.body };
+    renderFallback();
+    expect(container.querySelector('.sv-split--fallback')).not.toBeNull();
+    expect(container.querySelector('.street-view-minimap')).not.toBeNull();
+    // 이 지도는 더 이상 '미니맵'이 아니다.
+    expect(screen.getByRole('complementary', { name: '위성 지도' })).toBeInTheDocument();
+  });
+
+  it('일반·위성 토글이 폴백에서도 뜨고 위성이 기본이다', () => {
+    renderFallback();
+    const toggle = screen.getByRole('button', { name: /일반|위성/ });
+    expect(toggle).toHaveAttribute('aria-pressed', 'true');
+
+    fireEvent.click(toggle);
+    expect(screen.getByRole('button', { name: /일반|위성/ })).toHaveAttribute(
+      'aria-pressed',
+      'false'
+    );
+  });
+
+  // 폴백에서는 좌표가 한 점뿐이라 fitBounds가 최대 배율까지 확대해 버린다.
+  it('한 점만 있을 때는 fitBounds 대신 줌을 고정한다', () => {
+    const mock = renderFallback();
+    expect(mock.miniMap.fitBoundsCalls).toBe(0);
+    expect(mock.miniMap.zoom).toBe(17);
+  });
+
+  it('인포바가 위성 지도로 대신 보여준다고 알린다', () => {
+    renderFallback();
+    expect(screen.getByRole('status', { name: '' }).textContent).toMatch(/위성 지도/);
+  });
+
+  // 화면 안에 위성이 있으므로 '위성지도에서 확인'은 더 이상 맞는 문구가 아니다.
+  it('카드는 네이버 지도 새 창 링크를 남긴다', () => {
+    renderFallback();
+    const link = screen.getByRole('link', { name: /네이버 지도에서 열기/ });
+    expect(link).toHaveAttribute('target', '_blank');
+    expect(link.getAttribute('href')).toContain('sw');
+  });
+
+  it('로드뷰가 없으면 파노라마 이어 보기 링크는 뜨지 않는다', () => {
+    renderFallback();
     expect(screen.queryByRole('link', { name: /네이버 지도에서 보기/ })).toBeNull();
   });
 });
