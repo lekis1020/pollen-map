@@ -66,8 +66,47 @@ export function buildReportContext(item) {
   return { headline, location, shown, coords };
 }
 
-// X 본문 상한. 넘기면 인텐트가 본문을 통째로 버린다.
+// X의 가중 글자수 상한이다 — String.length가 아니다. X는 코드포인트마다
+// 가중치 1 또는 2를 매기고 이 합이 280을 넘으면 인텐트가 본문을 통째로
+// 버린다. 한글 음절(U+AC00–U+D7A3)은 가중치 2라서, 이 앱이 만드는 본문은
+// 거의 전부 한글이므로 String.length로만 재면 실제 한도의 절반만 채워도
+// 넘친 것처럼 보이거나, 반대로 실제로는 넘쳤는데 안 넘친 것처럼 보인다.
 export const X_MAX = 280;
+
+// X의 가중치 규칙(코드포인트 기준). 이 범위 밖은 전부 가중치 2 —
+// 한글 음절/자모, CJK 한자, 가나 등이 여기 해당한다.
+function xWeight(codePoint) {
+  if (
+    (codePoint >= 0x0000 && codePoint <= 0x10ff) ||
+    (codePoint >= 0x2000 && codePoint <= 0x200d) ||
+    (codePoint >= 0x2010 && codePoint <= 0x201f) ||
+    (codePoint >= 0x2032 && codePoint <= 0x2037)
+  ) {
+    return 1;
+  }
+  return 2;
+}
+
+// 서로게이트 쌍이 코드포인트 하나로 세어지도록 charCodeAt이 아니라
+// for...of로 순회한다.
+function xWeightedLength(text) {
+  let total = 0;
+  for (const ch of text) total += xWeight(ch.codePointAt(0));
+  return total;
+}
+
+// 가중 예산 안에 들어오는 만큼만 앞에서부터 잘라 담는다.
+function truncateToXWeight(text, maxWeight) {
+  let result = '';
+  let used = 0;
+  for (const ch of text) {
+    const w = xWeight(ch.codePointAt(0));
+    if (used + w > maxWeight) break;
+    result += ch;
+    used += w;
+  }
+  return result;
+}
 
 export function reportMailHref(ctx) {
   const body = [
@@ -107,8 +146,8 @@ export function reportXHref(ctx) {
   const tail = `\n${ctx.headline}\n${ctx.shown.join(' · ')}`;
 
   const fixed = head + coord;
-  const room = X_MAX - fixed.length;
-  const text = fixed + (room > 1 ? tail.slice(0, room) : '');
+  const room = X_MAX - xWeightedLength(fixed);
+  const text = fixed + (room > 1 ? truncateToXWeight(tail, room) : '');
 
   return `https://x.com/intent/post?text=${encodeURIComponent(text)}`;
 }

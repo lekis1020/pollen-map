@@ -110,10 +110,28 @@ describe('창구별 링크', () => {
     expect(url.searchParams.get('template')).toBe('data-report.yml');
     expect(url.searchParams.get('location')).toContain('37.522895');
     expect(url.searchParams.get('shown')).toContain('은행나무');
+    expect(url.searchParams.get('title')).toContain(ctx.headline);
   });
 
-  // 280자를 넘기면 X가 본문을 통째로 버린다. 잘라서라도 링크는 살아야 한다.
-  it('X 링크는 280자 안으로 자른다', () => {
+  // X는 String.length가 아니라 코드포인트 가중치 합으로 280자를 센다.
+  // 대부분의 코드포인트(한글 음절 포함)는 가중치 2다. 여기서 앱 코드와
+  // 별도로 그 규칙을 다시 계산해, 구현이 진짜로 X의 한도를 지키는지 본다.
+  function xWeightedLength(text) {
+    let total = 0;
+    for (const ch of text) {
+      const cp = ch.codePointAt(0);
+      const light =
+        (cp >= 0x0000 && cp <= 0x10ff) ||
+        (cp >= 0x2000 && cp <= 0x200d) ||
+        (cp >= 0x2010 && cp <= 0x201f) ||
+        (cp >= 0x2032 && cp <= 0x2037);
+      total += light ? 1 : 2;
+    }
+    return total;
+  }
+
+  // 280자(가중치 기준)를 넘기면 X가 본문을 통째로 버린다. 잘라서라도 링크는 살아야 한다.
+  it('X 링크는 가중 글자수 280 안으로 자른다', () => {
     const long = buildReportContext({
       sourceType: 'streetTree',
       sourceLabel: '전국 가로수길',
@@ -123,7 +141,7 @@ describe('창구별 링크', () => {
     });
     const text = decodeURIComponent(new URL(reportXHref(long)).searchParams.get('text'));
 
-    expect(text.length).toBeLessThanOrEqual(X_MAX);
+    expect(xWeightedLength(text)).toBeLessThanOrEqual(X_MAX);
     expect(text).toContain('37.4');   // 좌표는 잘려나가면 안 된다
   });
 
