@@ -53,6 +53,7 @@ describe('buildReportContext', () => {
 
   it('폴리라인 그룹은 대표 레코드에서 좌표를 가져온다', () => {
     const group = {
+      sourceType: 'streetTree',
       count: 12,
       species: '은행나무',
       roadName: '테헤란로',
@@ -63,6 +64,7 @@ describe('buildReportContext', () => {
     const ctx = buildReportContext(group);
 
     expect(ctx.coords).toEqual({ lat: 37.5228, lng: 127.0202 });
+    expect(ctx.shown.join('\n')).toContain('구분: 가로수길');
     expect(ctx.shown.join('\n')).toContain('식재본수: 12본');
   });
 

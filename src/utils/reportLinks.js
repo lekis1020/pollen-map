@@ -11,7 +11,7 @@
 const UNKNOWN = '미상';
 
 const SOURCE_LABEL = {
-  streetTree: '전국 가로수길',
+  streetTree: '가로수길',
   seoulTree: '서울 가로수 (개별)',
   famousForest: '국유림 명품숲',
 };
