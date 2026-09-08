@@ -78,7 +78,7 @@ spec §4는 "`.report-btn`을 단다"고만 적었다. 구현 형태를 여기�
 | `famousForest` | 명품숲 마커 팝업 | 같음 |
 | (폴리라인 그룹) | 가로수길 구간 팝업 | 최상위에 없음 → `item.representative`에서 |
 
-폴리라인 그룹은 `src/utils/groupByRoad.js:98-105`가 만든다: `{ path, count, species, roadName, city, district, representative }`. `sourceType`이 없고 `latitude`도 없다.
+폴리라인 그룹은 `src/utils/groupByRoad.js:96-105`가 만든다: `{ id, path, count, species, roadName, city, district, sourceType, representative, bounds }`. **`sourceType`은 있고(`first.sourceType` 복사) `sourceLabel`과 최상위 `latitude`가 없다.**
 
 - [ ] **Step 0: 브랜치를 구현용으로 바꾼다**
 
@@ -151,12 +151,15 @@ describe('buildReportContext', () => {
       roadName: '테헤란로',
       city: '서울특별시',
       district: '강남구',
+      sourceType: 'streetTree',   // groupByRoad.js:103이 first에서 복사한다
       representative: { latitude: 37.5228, longitude: 127.0202, institution: '강남구청' },
     };
     const ctx = buildReportContext(group);
 
     expect(ctx.coords).toEqual({ lat: 37.5228, lng: 127.0202 });
     expect(ctx.shown.join('\n')).toContain('식재본수: 12본');
+    // 그룹엔 sourceLabel이 없어 SOURCE_LABEL 매핑이 실제로 쓰이는 경로다.
+    expect(ctx.shown.join('\n')).toContain('구분: 가로수길');
   });
 
   // 도로명 칸이 숫자·기호뿐이라 sanitizeRoadName이 비운 레코드가 서울에만
@@ -200,7 +203,7 @@ Expected: FAIL — `Failed to resolve import "./reportLinks.js"`
 const UNKNOWN = '미상';
 
 const SOURCE_LABEL = {
-  streetTree: '전국 가로수길',
+  streetTree: '가로수길',          // src/services/normalizers.js:64와 같아야 한다
   seoulTree: '서울 가로수 (개별)',
   famousForest: '국유림 명품숲',
 };
