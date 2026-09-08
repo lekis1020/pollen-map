@@ -292,7 +292,7 @@ git commit -m "feat(report): 레코드에서 제보 문맥을 뽑는 순수 함�
   reportXHref(ctx)       → string  // https://x.com/intent/post?text=...
   mailHref(suffix, body) → string  // contact.js 확장. body는 선택
   ```
-  GitHub 프리필에 쓰는 필드 id: `location`, `shown`, `source` — Task 3의 템플릿과 반드시 일치해야 한다.
+  GitHub 프리필에 쓰는 필드 id: `location`, `shown` — Task 3의 템플릿과 반드시 일치해야 한다. 출처·기준일은 `shown`에 이미 들어 있어 따로 두지 않는다.
 
 - [ ] **Step 1: 실패하는 테스트를 쓴다**
 
