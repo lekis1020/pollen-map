@@ -10,10 +10,14 @@ export const CONTACT_GITHUB_ISSUES = 'https://github.com/lekis1020/pollen-map/is
 /**
  * 받은 편지함에서 이 서비스 제보임을 바로 알아보려면 제목이 채워져 있어야 한다.
  * @param {string} [suffix] 제목 뒤에 붙일 맥락 (예: '데이터 로드 실패')
+ * @param {string} [body] 본문. 제보 링크가 위치·표시 정보를 미리 채운다
  */
-export function mailHref(suffix) {
+export function mailHref(suffix, body) {
   const subject = suffix
     ? `[식물 알레르기 지도] ${suffix}`
     : '[식물 알레르기 지도] 제보';
-  return `mailto:${CONTACT_MAIL}?subject=${encodeURIComponent(subject)}`;
+  const q = `subject=${encodeURIComponent(subject)}`;
+  return body
+    ? `mailto:${CONTACT_MAIL}?${q}&body=${encodeURIComponent(body)}`
+    : `mailto:${CONTACT_MAIL}?${q}`;
 }

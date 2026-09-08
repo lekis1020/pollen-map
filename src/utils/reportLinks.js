@@ -8,6 +8,8 @@
  * 로드뷰 모달(JSX) 양쪽에서 같은 함수를 쓰기 위해서다.
  */
 
+import { CONTACT_GITHUB_ISSUES, CONTACT_X_HANDLE, mailHref } from '../data/contact.js';
+
 const UNKNOWN = '미상';
 
 const SOURCE_LABEL = {
@@ -62,4 +64,51 @@ export function buildReportContext(item) {
   if (item.referenceDate) shown.push(`데이터 기준: ${item.referenceDate}`);
 
   return { headline, location, shown, coords };
+}
+
+// X 본문 상한. 넘기면 인텐트가 본문을 통째로 버린다.
+export const X_MAX = 280;
+
+export function reportMailHref(ctx) {
+  const body = [
+    '■ 위치',
+    ...ctx.location.map((l) => `  ${l}`),
+    '',
+    '■ 지도에 표시된 정보',
+    ...ctx.shown.map((l) => `  ${l}`),
+    '',
+    '■ 제보 내용 (아래에 적어주세요)',
+    '  무엇이 틀렸나요:',
+    '  실제 정보:',
+    '  (사진이 있으면 첨부해 주세요)',
+    '',
+  ].join('\n');
+
+  return mailHref(`데이터 제보 — ${ctx.headline}`, body);
+}
+
+export function reportGithubHref(ctx) {
+  // 필드 id는 .github/ISSUE_TEMPLATE/data-report.yml과 일치해야 한다.
+  // 오타는 GitHub이 조용히 무시하므로 issueTemplate.test.js가 대조한다.
+  const params = new URLSearchParams({
+    template: 'data-report.yml',
+    title: `[제보] ${ctx.headline}`,
+    location: ctx.location.join('\n'),
+    shown: ctx.shown.join('\n'),
+  });
+  return `${CONTACT_GITHUB_ISSUES}/new?${params}`;
+}
+
+export function reportXHref(ctx) {
+  // 좌표가 잘려나가면 제보로서 쓸모가 없다. 그래서 좌표를 먼저 넣고
+  // 뒤쪽(도로명·수종)부터 잘라낸다.
+  const head = `${CONTACT_X_HANDLE} 지도 정보 오류 제보`;
+  const coord = ctx.coords ? `\n좌표 ${ctx.coords.lat}, ${ctx.coords.lng}` : '';
+  const tail = `\n${ctx.headline}\n${ctx.shown.join(' · ')}`;
+
+  const fixed = head + coord;
+  const room = X_MAX - fixed.length;
+  const text = fixed + (room > 1 ? tail.slice(0, room) : '');
+
+  return `https://x.com/intent/post?text=${encodeURIComponent(text)}`;
 }

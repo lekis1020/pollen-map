@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, it, expect } from 'vitest';
-import { buildReportContext } from './reportLinks.js';
+import { buildReportContext, reportMailHref, reportGithubHref, reportXHref, X_MAX } from './reportLinks.js';
 
 // 손으로 만든 목은 실제 경로를 밟지 않는다. 실제 스냅샷에서 레코드를 꺼내 쓴다.
 // (메모리 test-the-real-request-shape: 테스트 헬퍼 기본값이 5주 장애를 가렸다)
@@ -82,5 +82,72 @@ describe('buildReportContext', () => {
 
     expect(ctx.coords).toBeNull();
     expect(ctx.location.join('\n')).toContain('좌표: 미상');
+  });
+});
+
+describe('창구별 링크', () => {
+  const ctx = buildReportContext({
+    sourceType: 'seoulTree',
+    sourceLabel: '서울 가로수 (개별)',
+    roadName: '테헤란로', city: '서울특별시', district: '강남구',
+    species: '은행나무', plantCount: 1,
+    latitude: 37.522895, longitude: 127.020205,
+    referenceDate: '2026-04-29',
+  });
+
+  it('메일 링크에 위치와 표시 정보를 본문으로 채운다', () => {
+    const body = decodeURIComponent(reportMailHref(ctx).split('&body=')[1]);
+
+    expect(body).toContain('좌표: 37.522895, 127.020205');
+    expect(body).toContain('구분: 서울 가로수 (개별)');
+    expect(body).toContain('무엇이 틀렸나요:');
+  });
+
+  it('GitHub 링크는 이슈 폼 템플릿을 지정하고 필드를 프리필한다', () => {
+    const url = new URL(reportGithubHref(ctx));
+
+    expect(url.pathname).toBe('/lekis1020/pollen-map/issues/new');
+    expect(url.searchParams.get('template')).toBe('data-report.yml');
+    expect(url.searchParams.get('location')).toContain('37.522895');
+    expect(url.searchParams.get('shown')).toContain('은행나무');
+  });
+
+  // 280자를 넘기면 X가 본문을 통째로 버린다. 잘라서라도 링크는 살아야 한다.
+  it('X 링크는 280자 안으로 자른다', () => {
+    const long = buildReportContext({
+      sourceType: 'streetTree',
+      sourceLabel: '전국 가로수길',
+      city: '강원특별자치도', district: '삼척시',
+      roadName: '가'.repeat(300), species: '나'.repeat(300),
+      latitude: 37.4, longitude: 129.1,
+    });
+    const text = decodeURIComponent(new URL(reportXHref(long)).searchParams.get('text'));
+
+    expect(text.length).toBeLessThanOrEqual(X_MAX);
+    expect(text).toContain('37.4');   // 좌표는 잘려나가면 안 된다
+  });
+
+  // 공공데이터 원본에 &, 따옴표, # 이 그대로 들어 있다.
+  // 인코딩이 깨지면 링크가 본문 중간에서 잘린다.
+  it('특수문자가 든 값을 인코딩해 링크를 깨뜨리지 않는다', () => {
+    const dirty = buildReportContext({
+      sourceType: 'seoulTree',
+      roadName: 'A&B "가로수" #1', city: '서울특별시', district: '중구',
+      species: '느티나무', latitude: 37.5, longitude: 127.0,
+    });
+
+    const mail = reportMailHref(dirty);
+    const gh = reportGithubHref(dirty);
+    const x = reportXHref(dirty);
+
+    for (const href of [mail, gh, x]) {
+      expect(href).not.toContain(' ');
+      expect(href).not.toContain('"');
+    }
+    expect(decodeURIComponent(mail)).toContain('A&B "가로수" #1');
+    expect(decodeURIComponent(x)).toContain('A&B "가로수" #1');
+
+    const ghUrl = new URL(gh);
+    expect(ghUrl.searchParams.get('location')).toContain('A&B "가로수" #1');
   });
 });
