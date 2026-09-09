@@ -189,3 +189,46 @@ describe('팝업 버튼 동작', () => {
     expect(iw.opts.content).toContain('street-view-btn');
   });
 });
+
+describe('알레르기 등급 설명', () => {
+  // 등급 배지는 크게 보이는데 그 등급이 무엇을 뜻하는지는 어디에도 없었다.
+  // 9월에 4·5월 수종을 보고도 빨간 배지만 눈에 들어와, 등급을 "지금 이 자리의
+  // 위험도"로 오해할 수 있다. 등급은 꽃가루 자체의 성질이고 실제 영향은 시기가
+  // 정한다는 것을 팝업이 직접 말해야 한다.
+  it('알레르기 정보가 있는 수종의 팝업에 설명 문구가 있다', async () => {
+    vi.useFakeTimers();
+    render(<Map data={[tree()]} onStreetViewClick={() => {}} geo={geoStub} />);
+    await act(async () => { vi.advanceTimersByTime(400); });
+
+    const iw = await openPopup();
+    const note = iw.getContentElement().querySelector('.popup-allergen-note');
+    expect(note, '등급 설명 문구가 없다').toBeTruthy();
+    expect(note.textContent).toContain('알레르기 유발 가능성');
+    expect(note.textContent).toContain('꽃가루 시기에 따라 달라집니다');
+  });
+
+  // '정보 없음' 팝업에는 꽃가루 시기 행 자체가 없다. "위 꽃가루 시기에 따라"가
+  // 가리킬 곳이 없고, 항원성을 주장한 적도 없으므로 문구를 넣으면 안 된다.
+  it('DB에 없는 수종의 팝업에는 설명 문구를 넣지 않는다', async () => {
+    vi.useFakeTimers();
+    const unknown = tree({ id: 'u1', species: '없는나무', speciesList: ['없는나무'] });
+    render(<Map data={[unknown]} onStreetViewClick={() => {}} geo={geoStub} />);
+    await act(async () => { vi.advanceTimersByTime(400); });
+
+    const iw = await openPopup();
+    const el = iw.getContentElement();
+    expect(el.textContent, '이 팝업은 정보 없음이어야 한다').toContain('정보 없음');
+    expect(el.querySelector('.popup-allergen-note'), '정보 없음인데 설명 문구가 붙었다').toBeNull();
+  });
+
+  // 팝업을 열지 않고 색만 보는 사용자도 있다.
+  it('범례에도 같은 취지의 한 줄이 있다', async () => {
+    vi.useFakeTimers();
+    const { container } = render(<Map data={[tree()]} onStreetViewClick={() => {}} geo={geoStub} />);
+    await act(async () => { vi.advanceTimersByTime(400); });
+
+    const note = container.querySelector('.legend-note');
+    expect(note, '범례에 설명이 없다').toBeTruthy();
+    expect(note.textContent).toContain('알레르기 유발 가능성');
+  });
+});

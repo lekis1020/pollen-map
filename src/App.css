@@ -336,6 +336,15 @@ html, body, #root {
   font-weight: 400 !important;
 }
 
+/* 등급이 무엇을 뜻하는지 밝히는 주석. 정보 행을 밀어내면 안 되므로 조용하게. */
+.popup-allergen-note {
+  padding-top: 8px !important;
+  color: var(--tp-text-soft);
+  font-size: 11px;
+  line-height: 1.5;
+  font-weight: 400 !important;
+}
+
 .popup-source-note {
   font-size: 11px;
   line-height: 1.5;

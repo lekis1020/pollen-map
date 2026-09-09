@@ -9,6 +9,10 @@ export default function Legend() {
   return (
     <div className="map-legend">
       <h4>알레르기 등급</h4>
+      {/* 팝업을 열지 않고 색만 보는 사용자에게도 등급의 뜻이 닿아야 한다. */}
+      <p className="legend-note">
+        등급은 꽃가루의 알레르기 유발 가능성이며, 유행 시기에 따라 실제 영향이 달라집니다.
+      </p>
       {levels.map(([key, info]) => (
         <div key={key} className="legend-item">
           <span className="legend-color" style={{ background: info.color }} />

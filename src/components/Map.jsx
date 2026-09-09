@@ -55,6 +55,17 @@ function buildAllergenRows(item, { withSymptoms = true } = {}) {
       <tr><td class="popup-label">주요 증상</td><td class="popup-symptoms">${escapeHtml(match.info.symptoms)}</td></tr>`;
     }
   }
+
+  // 등급 배지만 크게 보이면 "지금 이 자리가 위험하다"로 읽힌다. 등급은 꽃가루
+  // 자체의 성질이고 실제 영향은 시기가 정한다는 것을 팝업이 직접 말해야 한다.
+  //
+  // 매칭이 하나도 없으면(등급 '정보 없음') 넣지 않는다 — 꽃가루 시기 행 자체가
+  // 없어 "위 꽃가루 시기"가 가리킬 곳이 없고, 유발 가능성을 주장한 적도 없다.
+  if (matches.some((m) => m.info)) {
+    rows += `
+      <tr><td colspan="2" class="popup-allergen-note">※ 등급은 이 수종 꽃가루의 알레르기 유발 가능성을 뜻합니다. 실제 영향은 위 꽃가루 시기에 따라 달라집니다.</td></tr>`;
+  }
+
   return rows;
 }
 

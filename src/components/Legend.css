@@ -64,3 +64,11 @@
     transparent 14px
   ) !important;
 }
+
+/* 등급의 뜻을 밝히는 한 줄. 등급 목록보다 눈에 덜 띄어야 한다. */
+.legend-note {
+  margin: 0 0 8px;
+  color: var(--lg-text-soft);
+  font-size: 11px;
+  line-height: 1.45;
+}
