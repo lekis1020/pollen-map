@@ -236,3 +236,38 @@ describe('미니맵 인스턴스 수명', () => {
     expect(toggle()).toHaveTextContent('위성');
   });
 });
+
+// 로드뷰가 제보의 가장 중요한 진입점이다. "여긴 나무가 없다"를 알게 되는
+// 자리가 바로 여기이고, treeData prop이 이미 레코드를 통째로 받고 있다.
+describe('제보 링크', () => {
+  it('보고 있는 지점 정보를 채운 제보 링크를 하단에 둔다', () => {
+    installNaverMock();
+    render(<StreetViewModal treeData={TREE} onClose={() => {}} />);
+
+    const mail = screen.getByRole('link', { name: /메일로 제보/ });
+    const body = decodeURIComponent(mail.getAttribute('href'));
+    expect(body).toContain('좌표: 37.57, 126.9769');
+    expect(body).toContain('은행나무');
+    expect(body).toContain('세종대로');
+  });
+
+  it('X · 메일 · GitHub 세 창구를 모두 둔다', () => {
+    installNaverMock();
+    render(<StreetViewModal treeData={TREE} onClose={() => {}} />);
+
+    expect(screen.getByRole('link', { name: /X로 제보/ })).toHaveAttribute('target', '_blank');
+    // mailto에 target="_blank"를 쓰면 빈 탭이 남는다.
+    expect(screen.getByRole('link', { name: /메일로 제보/ })).not.toHaveAttribute('target');
+    expect(screen.getByRole('link', { name: /GitHub로 제보/ }).getAttribute('href'))
+      .toContain('template=data-report.yml');
+  });
+
+  // 로드뷰가 없어 위성으로 폴백한 지점이야말로 "나무가 없다"를 확인하기 쉬운
+  // 자리다. 폴백 화면에서 제보 링크가 사라지면 안 된다.
+  it('위성 폴백 화면에서도 제보 링크가 남는다', () => {
+    installNaverMock({ panoramaFails: true });
+    render(<StreetViewModal treeData={TREE} onClose={() => {}} />);
+
+    expect(screen.getByRole('link', { name: /메일로 제보/ })).toBeInTheDocument();
+  });
+});

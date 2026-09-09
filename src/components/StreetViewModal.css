@@ -753,3 +753,24 @@
     max-width: none;
   }
 }
+
+/* 제보 링크. 정보 바 오른쪽 끝, 네이버 지도 링크 다음에 온다.
+   좁은 화면에서는 줄바꿈되도록 두어 상태 문구를 밀어내지 않게 한다. */
+.sv-report {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-left: auto;
+  font-size: 12px;
+}
+
+.sv-report-label {
+  opacity: 0.7;
+}
+
+.sv-report a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}

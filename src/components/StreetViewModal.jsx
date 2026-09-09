@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { compareTimeline, compareRoadName } from '../utils/roadviewCheck.js';
 import { naverPanoramaUrl } from '../utils/naverLinks.js';
+import { buildReportContext, reportMailHref, reportGithubHref, reportXHref } from '../utils/reportLinks.js';
 import './StreetViewModal.css';
 
 // 로드뷰가 없을 때 위성 지도의 기본 배율. 건물 하나가 아니라 블록이 보이는 수준.
@@ -87,6 +88,10 @@ export default function StreetViewModal({ treeData, onClose }) {
   const [panoMeta, setPanoMeta] = useState(null); // { panoId, address, photodate, pov }
 
   const mapType = mapTypeChoice ?? (error ? 'hybrid' : 'normal');
+
+  // 로드뷰를 보다가 "여긴 나무가 없다"를 알게 되는 것이 가장 흔한 발견 경로다.
+  // treeData가 이미 레코드를 통째로 들고 있어 따로 배선할 것이 없다.
+  const reportCtx = buildReportContext(treeData);
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -588,6 +593,13 @@ export default function StreetViewModal({ treeData, onClose }) {
               <span className="sv-cta-icon" aria-hidden="true">{ICONS.external}</span>
             </a>
           )}
+          {/* mailto에는 target="_blank"를 쓰지 않는다 — 빈 탭이 남는다. */}
+          <span className="sv-report">
+            <span className="sv-report-label">정보가 다른가요?</span>
+            <a href={reportXHref(reportCtx)} target="_blank" rel="noopener noreferrer">X로 제보</a>
+            <a href={reportMailHref(reportCtx)}>메일로 제보</a>
+            <a href={reportGithubHref(reportCtx)} target="_blank" rel="noopener noreferrer">GitHub로 제보</a>
+          </span>
         </div>
       </div>
     </div>
