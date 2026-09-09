@@ -58,7 +58,7 @@ export default function ContactPanel() {
         </li>
         <li>
           <a
-            href={CONTACT_GITHUB_ISSUES}
+            href={`${CONTACT_GITHUB_ISSUES}/new?template=data-report.yml`}
             target="_blank"
             rel="noopener noreferrer"
           >
@@ -69,7 +69,7 @@ export default function ContactPanel() {
               />
             </svg>
             <span className="contact-label">GitHub</span>
-            <span className="contact-value">이슈 등록</span>
+            <span className="contact-value">데이터 제보</span>
           </a>
         </li>
       </ul>

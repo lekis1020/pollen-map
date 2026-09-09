@@ -1,0 +1,9 @@
+# GitHub 계정이 없는 이용자가 더 많다. 이슈만 두면 제보 길이 사실상 막힌다.
+blank_issues_enabled: true
+contact_links:
+  - name: 메일로 제보
+    url: mailto:lekis1020@gmail.com
+    about: GitHub 계정 없이 제보하실 수 있습니다
+  - name: X(트위터)로 제보
+    url: https://x.com/lekis1020
+    about: 사진과 함께 짧게 알려주셔도 됩니다

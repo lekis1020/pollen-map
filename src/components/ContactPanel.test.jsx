@@ -15,7 +15,7 @@ describe('ContactPanel', () => {
     expect(links.map((a) => a.getAttribute('href'))).toEqual([
       'https://x.com/lekis1020',
       expect.stringMatching(/^mailto:lekis1020@gmail\.com\?subject=/),
-      'https://github.com/lekis1020/pollen-map/issues',
+      'https://github.com/lekis1020/pollen-map/issues/new?template=data-report.yml',
     ]);
   });
 
