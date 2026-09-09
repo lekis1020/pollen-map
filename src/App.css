@@ -336,6 +336,30 @@ html, body, #root {
   font-weight: 400 !important;
 }
 
+/* 제보 줄. 팝업의 다른 정보보다 조용하되 눈에는 띄어야 한다. */
+.popup-report {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 10px 0 0;
+  padding-top: 8px;
+  border-top: 1px solid var(--tp-border, #e2e8f0);
+  font-size: 11px;
+}
+
+.popup-report-label {
+  color: var(--tp-text-soft);
+}
+
+.popup-report a {
+  color: #2f6fed;
+  text-decoration: none;
+}
+
+.popup-report a:hover {
+  text-decoration: underline;
+}
+
 /* 등급이 무엇을 뜻하는지 밝히는 주석. 정보 행을 밀어내면 안 되므로 조용하게. */
 .popup-allergen-note {
   padding-top: 8px !important;

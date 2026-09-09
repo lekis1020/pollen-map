@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { getAllergenInfos, getPollenSeasonText, ALLERGEN_LEVELS } from '../data/allergenDatabase';
 import { FLAG_LABEL } from '../utils/qualityFlags';
+import { buildReportContext, reportMailHref, reportGithubHref, reportXHref } from '../utils/reportLinks.js';
 import Legend from './Legend';
 import './Map.css';
 
@@ -13,6 +14,29 @@ const escapeHtml = (value) =>
   String(value ?? '').replace(/[&<>"']/g, (c) => (
     { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
   ));
+
+// 제보 줄. 네 종류 팝업이 공유한다.
+//
+// 버튼 + JS 리스너가 아니라 순수 <a>다. 네이버 InfoWindow는 내부 클릭의
+// 전파를 끊지만 기본 동작은 막지 않아, 링크는 리스너 배선 없이 그대로 열린다.
+// mailto에는 target="_blank"를 쓰지 않는다 — 빈 탭이 남는다.
+//
+// 창구를 GitHub 하나로 줄이지 않는다. 일반 이용자는 이슈를 발행하지 못한다
+// (ContactPanel.test.jsx가 같은 이유를 이미 고정하고 있다).
+function buildReportRow(item) {
+  const ctx = buildReportContext(item);
+  const links = [
+    ['X', reportXHref(ctx), true],
+    ['메일', reportMailHref(ctx), false],
+    ['GitHub', reportGithubHref(ctx), true],
+  ];
+  const anchors = links
+    .map(([label, href, external]) =>
+      `<a href="${escapeHtml(href)}"${external ? ' target="_blank" rel="noopener noreferrer"' : ''}>${label}</a>`)
+    .join('');
+
+  return `<p class="popup-report"><span class="popup-report-label">이 정보가 틀렸나요?</span>${anchors}</p>`;
+}
 
 // 레코드에서 알레르기 판정 대상 수종 목록을 뽑는다.
 // speciesList가 있으면 정규화·분해된 결과를, 없으면 원본 단일 값을 쓴다.
@@ -475,6 +499,7 @@ export default function Map({ data, onStreetViewClick, geo }) {
       ${buildQualityNote(item)}
       ${sourceNote}
       <button type="button" class="street-view-btn">로드뷰 보기</button>
+      ${buildReportRow(item)}
     </div>`;
   }, []);
 
@@ -504,6 +529,7 @@ export default function Map({ data, onStreetViewClick, geo }) {
       </div>
       <table><tbody>${rows}</tbody></table>
       <p class="popup-source-note">출처: 산림청 국유림 명품숲 선정 현황(15038042) · 좌표는 Naver Cloud Geocoding 대표지점입니다.</p>
+      ${buildReportRow(item)}
     </div>`;
   }, []);
 
@@ -532,6 +558,7 @@ export default function Map({ data, onStreetViewClick, geo }) {
       ${buildQualityNote(pl.representative || pl)}
       ${sourceNote}
       <button type="button" class="street-view-btn">대표지점 로드뷰</button>
+      ${buildReportRow(pl)}
     </div>`;
   }, []);
 

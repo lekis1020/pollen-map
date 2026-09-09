@@ -232,3 +232,102 @@ describe('알레르기 등급 설명', () => {
     expect(note.textContent).toContain('알레르기 유발 가능성');
   });
 });
+
+describe('팝업 제보 링크', () => {
+  // 팝업 안 링크는 리스너를 달지 않는다. 네이버 InfoWindow는 내부 클릭의
+  // 전파만 끊고 기본 동작은 막지 않아 <a>가 그대로 열린다. 그래서 여기서는
+  // 마크업에 링크가 제대로 박혔는지를 본다.
+  const reportLinks = (iw) => [...iw.getContentElement().querySelectorAll('.popup-report a')];
+
+  it('개별 가로수 팝업에 X · 메일 · GitHub 순으로 링크가 있다', async () => {
+    vi.useFakeTimers();
+    render(<Map data={[tree()]} onStreetViewClick={() => {}} geo={geoStub} />);
+    await act(async () => { vi.advanceTimersByTime(400); });
+
+    const links = reportLinks(await openPopup());
+    expect(links).toHaveLength(3);
+    expect(links[0].getAttribute('href')).toContain('x.com/intent/post');
+    expect(links[1].getAttribute('href')).toMatch(/^mailto:/);
+    expect(links[2].getAttribute('href')).toContain('template=data-report.yml');
+  });
+
+  it('링크에 그 지점의 좌표와 수종이 담긴다', async () => {
+    vi.useFakeTimers();
+    render(<Map data={[tree()]} onStreetViewClick={() => {}} geo={geoStub} />);
+    await act(async () => { vi.advanceTimersByTime(400); });
+
+    const mail = reportLinks(await openPopup())[1].getAttribute('href');
+    const body = decodeURIComponent(mail);
+    expect(body).toContain('37.5, 127');
+    expect(body).toContain('은행나무');
+    expect(body).toContain('언주로');
+  });
+
+  // mailto에 target="_blank"를 쓰면 빈 탭이 남는다.
+  it('메일 링크만 새 탭으로 열지 않는다', async () => {
+    vi.useFakeTimers();
+    render(<Map data={[tree()]} onStreetViewClick={() => {}} geo={geoStub} />);
+    await act(async () => { vi.advanceTimersByTime(400); });
+
+    const links = reportLinks(await openPopup());
+    expect(links[0].getAttribute('target')).toBe('_blank');
+    expect(links[1].getAttribute('target')).toBeNull();
+    expect(links[2].getAttribute('target')).toBe('_blank');
+  });
+
+  // 공공데이터 원본에 따옴표·꺾쇠·&가 그대로 들어 있다. 팝업은 문자열 HTML이라
+  // 이스케이프가 빠지면 원본 값이 마크업이 된다.
+  it('특수문자가 든 도로명이 링크와 마크업을 깨뜨리지 않는다', async () => {
+    vi.useFakeTimers();
+    const dirty = tree({ id: 'd1', roadName: '"><img src=x> A&B' });
+    render(<Map data={[dirty]} onStreetViewClick={() => {}} geo={geoStub} />);
+    await act(async () => { vi.advanceTimersByTime(400); });
+
+    const iw = await openPopup();
+    expect(iw.getContentElement().querySelector('img'), '주입된 img가 살아났다').toBeNull();
+    expect(reportLinks(iw)).toHaveLength(3);
+  });
+
+  it('명품숲 팝업에도 제보 링크가 있다', async () => {
+    vi.useFakeTimers();
+    const forest = {
+      id: 'f1', sourceType: 'famousForest', sourceLabel: '국유림 명품숲',
+      locationName: '무왕리 낙엽송숲', address: '경기 양평군 지평면 무왕리 산143',
+      species: '낙엽송', speciesList: ['낙엽송'], latitude: 37.44, longitude: 127.0,
+      qualityFlags: [],
+    };
+    render(<Map data={[forest]} onStreetViewClick={() => {}} geo={geoStub} />);
+    await act(async () => { vi.advanceTimersByTime(400); });
+
+    expect(reportLinks(await openPopup())).toHaveLength(3);
+  });
+
+  // 구간 팝업은 그룹 객체를 받는다. groupByRoad가 만드는 실제 shape을 쓴다 —
+  // 최상위 latitude가 없고 sourceLabel도 없다(sourceType은 있다).
+  it('가로수길 구간 팝업에도 제보 링크가 있다', async () => {
+    vi.useFakeTimers();
+    const group = {
+      id: 'pl_1', count: 12, species: '은행나무', speciesList: ['은행나무'],
+      roadName: '테헤란로', city: '서울특별시', district: '강남구',
+      sourceType: 'streetTree',
+      path: [{ lat: 37.50, lng: 127.00 }, { lat: 37.51, lng: 127.01 }],
+      representative: { id: 'r1', latitude: 37.50, longitude: 127.00, institution: '강남구청' },
+      bounds: { minLat: 37.50, maxLat: 37.51, minLng: 127.00, maxLng: 127.01 },
+    };
+    window.Worker = class {
+      constructor() { this.onmessage = null; }
+      postMessage() { this.onmessage?.({ data: { polylines: [group], markers: [] } }); }
+      terminate() {}
+    };
+    render(<Map data={[tree()]} onStreetViewClick={() => {}} geo={geoStub} />);
+    await act(async () => { vi.advanceTimersByTime(400); });
+
+    const plClick = naver.listeners.find((l) => l.type === 'click' && !('position' in (l.target || {})) && !l.target?.getBounds);
+    expect(plClick, '폴리라인 click 리스너를 찾지 못했다').toBeTruthy();
+    await act(async () => { plClick.fn({ coord: null }); });
+
+    const iw = naver.infoWindows[naver.infoWindows.length - 1];
+    expect(reportLinks(iw)).toHaveLength(3);
+    expect(decodeURIComponent(reportLinks(iw)[1].getAttribute('href'))).toContain('식재본수: 12본');
+  });
+});
