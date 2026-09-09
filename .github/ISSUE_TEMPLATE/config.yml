@@ -1,5 +1,8 @@
-# GitHub 계정이 없는 이용자가 더 많다. 이슈만 두면 제보 길이 사실상 막힌다.
 blank_issues_enabled: true
+
+# GitHub 계정이 없는 이용자가 더 많다. 이슈만 두면 제보 길이 사실상 막힌다.
+# 라벨 '제보'·'데이터'는 저장소에 실재해야 한다(2026-09-09 생성) — 없는 라벨을
+# 지정하면 이슈 폼이 라벨을 붙이지 못하고, 테스트는 YAML만 보므로 잡지 못한다.
 contact_links:
   - name: 메일로 제보
     url: mailto:lekis1020@gmail.com
