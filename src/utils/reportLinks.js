@@ -9,6 +9,7 @@
  */
 
 import { CONTACT_GITHUB_ISSUES, CONTACT_X_HANDLE, mailHref } from '../data/contact.js';
+import { naverMapUrl } from './naverLinks.js';
 
 const UNKNOWN = '미상';
 
@@ -63,7 +64,9 @@ export function buildReportContext(item) {
   }
   if (item.referenceDate) shown.push(`데이터 기준: ${item.referenceDate}`);
 
-  return { headline, location, shown, coords };
+  const mapUrl = coords ? naverMapUrl(coords) : null;
+
+  return { headline, location, shown, coords, mapUrl };
 }
 
 // X의 가중 글자수 상한이다 — String.length가 아니다. X는 코드포인트마다
@@ -112,6 +115,9 @@ export function reportMailHref(ctx) {
   const body = [
     '■ 위치',
     ...ctx.location.map((l) => `  ${l}`),
+    // 검토자가 좌표를 옮겨 붙이지 않고 바로 열 수 있게. GitHub·X에는 넣지
+    // 않는다 — 이슈 폼의 위치 칸과 X의 280자는 좌표 텍스트로 충분하다.
+    ...(ctx.mapUrl ? [`  지도: ${ctx.mapUrl}`] : []),
     '',
     '■ 지도에 표시된 정보',
     ...ctx.shown.map((l) => `  ${l}`),

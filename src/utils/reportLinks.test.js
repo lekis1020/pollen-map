@@ -83,6 +83,20 @@ describe('buildReportContext', () => {
     expect(ctx.coords).toBeNull();
     expect(ctx.location.join('\n')).toContain('좌표: 미상');
   });
+
+  // 검토자가 좌표를 지도에 옮겨 붙이지 않고 한 번에 열 수 있게 한다.
+  // 경도가 먼저다 — 순서가 뒤집히면 링크는 열리지만 엉뚱한 바다를 보여준다.
+  it('좌표가 있으면 네이버 지도 링크를 만든다', () => {
+    const ctx = buildReportContext({ ...seoulRecord(0), latitude: 37.522895, longitude: 127.020205 });
+
+    expect(ctx.mapUrl).toBe('https://map.naver.com/p?c=127.020205,37.522895,17,0,0,0,dh');
+  });
+
+  it('좌표가 없으면 지도 링크도 없다', () => {
+    const ctx = buildReportContext({ ...seoulRecord(0), latitude: 0, longitude: 0 });
+
+    expect(ctx.mapUrl).toBeNull();
+  });
 });
 
 describe('창구별 링크', () => {
@@ -101,6 +115,21 @@ describe('창구별 링크', () => {
     expect(body).toContain('좌표: 37.522895, 127.020205');
     expect(body).toContain('구분: 서울 가로수 (개별)');
     expect(body).toContain('무엇이 틀렸나요:');
+  });
+
+  it('메일 본문의 위치 블록 끝에 지도 링크를 넣는다', () => {
+    const body = decodeURIComponent(reportMailHref(ctx).split('&body=')[1]);
+    const locationBlock = body.split('\n\n')[0];
+
+    expect(locationBlock.split('\n').at(-1))
+      .toBe('  지도: https://map.naver.com/p?c=127.020205,37.522895,17,0,0,0,dh');
+  });
+
+  it('좌표가 없으면 메일 본문에 지도 줄을 넣지 않는다', () => {
+    const noCoords = buildReportContext({ sourceType: 'seoulTree', species: '은행나무' });
+    const body = decodeURIComponent(reportMailHref(noCoords).split('&body=')[1]);
+
+    expect(body).not.toContain('지도:');
   });
 
   it('GitHub 링크는 이슈 폼 템플릿을 지정하고 필드를 프리필한다', () => {

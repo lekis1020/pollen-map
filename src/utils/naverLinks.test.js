@@ -1,5 +1,19 @@
 import { describe, it, expect } from 'vitest';
-import { naverPanoramaUrl } from './naverLinks.js';
+import { naverMapUrl, naverPanoramaUrl } from './naverLinks.js';
+
+// 이 형식은 map.naver.com에서 서울 강남·부산 연제구 좌표로 열어 확인했다 (2026-09-13).
+describe('naverMapUrl', () => {
+  it('좌표로 일반 지도 딥링크를 만든다 — 경도가 먼저다', () => {
+    expect(naverMapUrl({ lat: 37.4979, lng: 127.0276 })).toBe(
+      'https://map.naver.com/p?c=127.0276,37.4979,17,0,0,0,dh'
+    );
+  });
+
+  it('좌표가 없으면 null을 돌려준다', () => {
+    expect(naverMapUrl({ lat: null, lng: 127 })).toBeNull();
+    expect(naverMapUrl({ lat: 37.5, lng: undefined })).toBeNull();
+  });
+});
 
 // 이 형식은 map.naver.com에서 실제 panoId로 열어 확인했다 (2026-08-30).
 // p= 없이 c=만 주면 파노라마가 아니라 '거리뷰 선택 모드 지도'가 뜬다.
