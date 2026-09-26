@@ -158,7 +158,9 @@ function App() {
         </div>
       </header>
 
-      <div className="app-body">
+      <PollenPanel coords={geo.coords} />
+
+      <div className="app-body" data-testid="app-body">
         <aside className={`sidebar ${sidebarOpen ? 'open' : 'closed'}`}>
           <FilterPanel
             filters={filters}
@@ -171,7 +173,6 @@ function App() {
         </aside>
 
         <main className="main-content">
-          <PollenPanel coords={geo.coords} />
           {error && (
             <div className="error-banner">
               {/*

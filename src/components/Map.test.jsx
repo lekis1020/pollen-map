@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import '@testing-library/jest-dom/vitest';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, cleanup, act } from '@testing-library/react';
+import { render, screen, cleanup, act } from '@testing-library/react';
 import Map from './Map.jsx';
 
 // 네이버 지도 API 최소 목.
@@ -10,6 +10,8 @@ import Map from './Map.jsx';
 function installNaverMock() {
   const listeners = [];
   const infoWindows = [];
+  const mapInstances = [];
+  const trigger = vi.fn();
 
   class InfoWindow {
     constructor(opts) { this.opts = opts; this.openCalls = []; this.closeCalls = 0; infoWindows.push(this); }
@@ -26,7 +28,7 @@ function installNaverMock() {
 
   const maps = {
     Map: class {
-      constructor() { this.zoom = 7; }
+      constructor() { this.zoom = 7; mapInstances.push(this); }
       getBounds() { return { minY: () => 37.4, maxY: () => 37.6, minX: () => 126.9, maxX: () => 127.1 }; }
       setCenter() {} setZoom() {} getZoom() { return this.zoom; } panBy() {}
     },
@@ -44,6 +46,7 @@ function installNaverMock() {
     Event: {
       addListener: (target, type, fn) => { const l = { target, type, fn }; listeners.push(l); return l; },
       removeListener: (l) => { const i = listeners.indexOf(l); if (i >= 0) listeners.splice(i, 1); },
+      trigger,
     },
   };
   window.naver = { maps };
@@ -51,12 +54,27 @@ function installNaverMock() {
   return {
     listeners,
     infoWindows,
+    mapInstances,
+    trigger,
     fire(type, arg, index = 0) {
       const matched = listeners.filter((l) => l.type === type);
       matched[index]?.fn(arg);
     },
     countOf(type) { return listeners.filter((l) => l.type === type).length; },
   };
+}
+
+function installResizeObserverMock() {
+  const observers = [];
+  globalThis.ResizeObserver = class {
+    constructor(callback) {
+      this.callback = callback;
+      this.observe = vi.fn();
+      this.disconnect = vi.fn();
+      observers.push(this);
+    }
+  };
+  return observers;
 }
 
 // 그룹화 워커 대체 — 넘어온 데이터를 전부 싱글톤 마커로 돌려준다.
@@ -77,15 +95,24 @@ const tree = (over = {}) => ({
 const geoStub = { coords: null, accuracy: null, status: 'idle', request: () => {} };
 
 let naver;
+let resizeObservers;
+let originalResizeObserver;
 
 beforeEach(() => {
+  originalResizeObserver = globalThis.ResizeObserver;
   naver = installNaverMock();
+  resizeObservers = installResizeObserverMock();
   installWorkerMock();
 });
 
 afterEach(() => {
   cleanup();
   delete window.naver;
+  if (originalResizeObserver === undefined) {
+    delete globalThis.ResizeObserver;
+  } else {
+    globalThis.ResizeObserver = originalResizeObserver;
+  }
   vi.useRealTimers();
 });
 
@@ -97,6 +124,42 @@ async function openPopup() {
   markerClick.fn();
   return naver.infoWindows[naver.infoWindows.length - 1];
 }
+
+describe('지도 데이터 정체성', () => {
+  it('지도 위에 식물 데이터의 성격을 명시한다', () => {
+    render(<Map data={[]} geo={geoStub} />);
+
+    expect(screen.getByText('식물 위치·수종 지도')).toBeInTheDocument();
+    expect(screen.getByText('지자체 등록 데이터 스냅샷')).toBeInTheDocument();
+  });
+});
+
+describe('지도 컨테이너 크기 변경', () => {
+  it('컨테이너가 리사이즈되면 네이버 지도에 resize 이벤트를 전달한다', async () => {
+    vi.useFakeTimers();
+    render(<Map data={[]} geo={geoStub} />);
+    await act(async () => { vi.advanceTimersByTime(400); });
+
+    expect(naver.mapInstances).toHaveLength(1);
+    expect(resizeObservers).toHaveLength(1);
+
+    await act(async () => { resizeObservers[0].callback([]); });
+
+    expect(naver.trigger).toHaveBeenCalledWith(naver.mapInstances[0], 'resize');
+  });
+
+  it('언마운트되면 컨테이너 observer를 해제한다', async () => {
+    vi.useFakeTimers();
+    const { unmount } = render(<Map data={[]} geo={geoStub} />);
+    await act(async () => { vi.advanceTimersByTime(400); });
+
+    expect(resizeObservers).toHaveLength(1);
+    const observer = resizeObservers[0];
+    unmount();
+
+    expect(observer?.disconnect).toHaveBeenCalledTimes(1);
+  });
+});
 
 describe('마커 팝업(InfoWindow) 수명', () => {
   it('지도를 움직여도 팝업이 닫히지 않는다', async () => {

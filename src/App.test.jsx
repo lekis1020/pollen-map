@@ -19,6 +19,28 @@ vi.mock('./services/cache', () => ({
 vi.mock('./components/Map', () => ({
   default: () => <div data-testid="map" />,
 }));
+vi.mock('./components/PollenPanel.jsx', () => ({
+  default: () => (
+    <section aria-label="오늘의 꽃가루 위험지수" data-testid="pollen-panel" />
+  ),
+}));
+
+describe('페이지 정보 구조', () => {
+  afterEach(() => {
+    cleanup();
+    vi.clearAllMocks();
+  });
+
+  it('꽃가루 예보를 지도 작업공간보다 앞에 둔다', () => {
+    render(<App />);
+    const panel = screen.getByTestId('pollen-panel');
+    const body = screen.getByTestId('app-body');
+
+    expect(
+      panel.compareDocumentPosition(body) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
+  });
+});
 
 describe('헤더 새로고침 버튼', () => {
   let reload;

@@ -123,6 +123,7 @@ html, body, #root {
 .app-body {
   display: flex;
   flex: 1;
+  min-height: 0;
   overflow: hidden;
 }
 
@@ -146,6 +147,7 @@ html, body, #root {
 /* Main content */
 .main-content {
   flex: 1;
+  min-height: 0;
   position: relative;
   display: flex;
   flex-direction: column;
@@ -462,6 +464,8 @@ html, body, #root {
 @media (max-width: 768px) {
   .app-body {
     flex-direction: column;
+    overflow-x: hidden;
+    overflow-y: auto;
   }
 
   .sidebar {
@@ -478,7 +482,8 @@ html, body, #root {
   }
 
   .main-content {
-    min-height: 55vh;
+    flex: 0 0 auto;
+    min-height: max(320px, 55vh);
   }
 
   .app-header h1 {

@@ -628,6 +628,22 @@ export default function Map({ data, onStreetViewClick, geo }) {
     // 의존성에 넣어도 지도가 다시 초기화되지 않는다.
   }, [placeLocationMarker, closeInfoWindow]);
 
+  // 상단 패널·사이드바 상태 변화로 컨테이너 크기가 달라지면 지도 SDK에도
+  // 알려 타일과 오버레이가 새 영역을 채우도록 한다.
+  useEffect(() => {
+    if (!mapReady || !mapRef.current || typeof ResizeObserver === 'undefined') return;
+
+    const observer = new ResizeObserver(() => {
+      const map = mapInstanceRef.current;
+      if (map && window.naver?.maps) {
+        window.naver.maps.Event.trigger(map, 'resize');
+      }
+    });
+    observer.observe(mapRef.current);
+
+    return () => observer.disconnect();
+  }, [mapReady]);
+
   // 폴리라인 + 싱글톤 마커 렌더
   useEffect(() => {
     const map = mapInstanceRef.current;
@@ -762,6 +778,10 @@ export default function Map({ data, onStreetViewClick, geo }) {
   return (
     <div className="map-wrapper">
       <div ref={mapRef} className="map-container" />
+      <div className="plant-map-label" aria-label="지도 데이터 안내">
+        <strong>식물 위치·수종 지도</strong>
+        <span>지자체 등록 데이터 스냅샷</span>
+      </div>
       <div className="map-controls">
         <button
           className={`gps-button ${gpsState}`}
