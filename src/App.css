@@ -482,8 +482,7 @@ html, body, #root {
   }
 
   .main-content {
-    flex: 0 0 auto;
-    min-height: max(320px, 55vh);
+    flex: 1 0 max(320px, 55vh);
   }
 
   .app-header h1 {

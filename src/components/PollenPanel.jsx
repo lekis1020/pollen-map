@@ -4,10 +4,10 @@ import './PollenPanel.css';
 
 const LEVEL_LABEL = ['낮음', '보통', '높음', '매우높음'];
 const LEVEL_STYLE = [
-  { background: '#dcfce7', text: '#166534' },
-  { background: '#fef3c7', text: '#92400e' },
-  { background: '#ffedd5', text: '#9a3412' },
-  { background: '#fee2e2', text: '#991b1b' },
+  { background: '#2ecc71', text: '#052e16' },
+  { background: '#f1c40f', text: '#713f12' },
+  { background: '#e67e22', text: '#431407' },
+  { background: '#e74c3c', text: '#3f0000' },
 ];
 
 // Exported for direct rule testing; it has no component or Fast Refresh state.
