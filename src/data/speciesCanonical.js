@@ -5,6 +5,8 @@
 // 추측으로 항목을 늘리지 말 것. 측정 근거는
 // docs/superpowers/specs/2026-07-24-data-audit.md 참조.
 
+import { JUNK_ONLY } from '../utils/junkText.js';
+
 const TYPO = {
   메타세콰이어: '메타세쿼이아',
   메타세콰이아: '메타세쿼이아',
@@ -138,7 +140,6 @@ export const NOT_A_TREE_MARKERS = [
   '결주', '고사', '공분', '미식재', '제거', '벌목', '굴취', '공터',
 ];
 
-const JUNK_ONLY = /^[\s0-9?×xX\-.]*$/;
 const SPLIT = /\s*[+,/·]\s*/;
 const TRAILING_ETC = /\s*(?:등|외)\s*$/;
 const EDGE_DIGITS = /^[0-9]+|[0-9]+$/g;

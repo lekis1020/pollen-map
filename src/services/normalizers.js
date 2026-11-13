@@ -1,18 +1,13 @@
 // 소스별 API 응답 정규화 함수
 
 import { canonicalizeSpecies } from '../data/speciesCanonical.js';
+import { sanitizeRoadName } from '../utils/junkText.js';
 
 let idCounter = 0;
-
-const JUNK_ONLY = /^[\s0-9?×xX\-.]*$/;
 
 // 도로명 칸에 '3', '6', '12' 같은 값이 들어간 케이스가 있다(서울 소스 7,130그루).
 // 숫자·기호만 있는 값은 도로명이 아니므로 비운다 — 잘못된 정보를 보여주느니
 // "도로명 미상"이 낫다.
-function sanitizeRoadName(raw) {
-  const text = String(raw || '').trim();
-  return !text || JUNK_ONLY.test(text) ? '' : text;
-}
 
 // 전국 소스에는 안정적인 레코드 id가 없다. 기관+도로명+시작좌표로 키를 만든다.
 // scripts/audit-data.mjs와 src/services/api.js가 같은 키를 써야 플래그가 붙는다.

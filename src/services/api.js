@@ -2,14 +2,7 @@ import { DATA_SOURCES } from './dataSources';
 import { NORMALIZERS, nationwideKey } from './normalizers';
 import { idbGet, idbSet } from './idbCache';
 import { canonicalizeSpecies } from '../data/speciesCanonical.js';
-
-const JUNK_ONLY = /^[\s0-9?×xX\-.]*$/;
-
-// 도로명 칸의 숫자·기호 값은 도로명이 아니다. normalizers.js와 같은 규칙.
-function sanitizeRoadName(raw) {
-  const text = String(raw || '').trim();
-  return !text || JUNK_ONLY.test(text) ? '' : text;
-}
+import { sanitizeRoadName } from '../utils/junkText.js';
 
 // 서울 소스의 품질 플래그. 인덱스를 키로 하는 객체다.
 // 실패해도 앱은 동작해야 하므로 빈 객체로 폴백한다.
