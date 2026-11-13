@@ -23,7 +23,7 @@ import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { FLAG, flagNationwideRecord, SIDO_BOUNDS } from '../src/utils/qualityFlags.js';
+import { FLAG, flagNationwideRecord, SIDO_ALIAS, SIDO_BOUNDS } from '../src/utils/qualityFlags.js';
 import { nationwideKey } from '../src/services/normalizers.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -45,15 +45,6 @@ if (!keyId || !key) {
   console.error('NAVER_GEOCODE_ID와 NAVER_GEOCODE_KEY 환경변수가 필요합니다.');
   process.exit(1);
 }
-
-const SIDO_ALIAS = {
-  서울특별시: '서울', 인천광역시: '인천', 경기도: '경기',
-  강원특별자치도: '강원', 강원도: '강원', 충청북도: '충북', 충청남도: '충남',
-  대전광역시: '대전', 세종특별자치시: '세종', 전북특별자치도: '전북',
-  전라북도: '전북', 전라남도: '전남', 광주광역시: '광주', 경상북도: '경북',
-  대구광역시: '대구', 경상남도: '경남', 부산광역시: '부산',
-  울산광역시: '울산', 제주특별자치도: '제주', 제주도: '제주',
-};
 
 // "둔촌동 105-9", "창평리 산 12" 같은 지번. 동 이름에 숫자가 끼어 있는
 // "신일4가"류는 [가-힣]{2,} 가 숫자를 넘지 못해 자연히 걸러진다.

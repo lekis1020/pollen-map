@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { getAllergenInfos, getPollenSeasonText, ALLERGEN_LEVELS } from '../data/allergenDatabase';
+import { haversineKm } from '../utils/coordRepair.js';
 import { FLAG_LABEL } from '../utils/qualityFlags';
 import { buildReportContext, reportMailHref, reportGithubHref, reportXHref } from '../utils/reportLinks.js';
 import Legend from './Legend';
@@ -265,15 +266,6 @@ export default function Map({ data, onStreetViewClick, geo }) {
       return r;
     };
 
-    const distKm = (a, b) => {
-      const R = 6371;
-      const toRad = (d) => (d * Math.PI) / 180;
-      const dLat = toRad(b.lat - a.lat);
-      const dLng = toRad(b.lng - a.lng);
-      const x = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(dLng / 2) ** 2;
-      return 2 * R * Math.asin(Math.sqrt(x));
-    };
-
     const results = (await Promise.allSettled(PROVIDERS.map(fetchOne)))
       .filter((r) => r.status === 'fulfilled')
       .map((r) => r.value);
@@ -283,7 +275,7 @@ export default function Map({ data, onStreetViewClick, geo }) {
     let best = null;
     if (results.length >= 2) {
       for (const anchor of results) {
-        const cluster = results.filter((r) => distKm(anchor, r) <= 30);
+        const cluster = results.filter((r) => haversineKm(anchor.lat, anchor.lng, r.lat, r.lng) <= 30);
         if (cluster.length >= 2 && (!best || cluster.length > best.cluster.length)) {
           const avgLat = cluster.reduce((s, r) => s + r.lat, 0) / cluster.length;
           const avgLng = cluster.reduce((s, r) => s + r.lng, 0) / cluster.length;

@@ -25,16 +25,6 @@ async function fetchKmaOp(op, regionCode, time) {
   return r.json();
 }
 
-function fetchOak(regionCode, time) {
-  return fetchKmaOp('getOakPollenRiskIdxV3', regionCode, time);
-}
-function fetchPine(regionCode, time) {
-  return fetchKmaOp('getPinePollenRiskIdxV3', regionCode, time);
-}
-function fetchWeed(regionCode, time) {
-  return fetchKmaOp('getWeedsPollenRiskndxV3', regionCode, time);
-}
-
 async function fetchGoogle(lat, lng) {
   const url = `https://pollen.googleapis.com/v1/forecast:lookup?location.latitude=${lat}&location.longitude=${lng}&days=1&key=${process.env.GOOGLE_POLLEN_KEY}`;
   const r = await fetch(url, { method: 'GET' });
@@ -98,9 +88,9 @@ export default async function handler(req, res) {
   const time = `${ymd}06`;
 
   const [oakR, pineR, weedR, googleR] = await Promise.allSettled([
-    fetchOak(regionCode, time),
-    fetchPine(regionCode, time),
-    fetchWeed(regionCode, time),
+    fetchKmaOp('getOakPollenRiskIdxV3', regionCode, time),
+    fetchKmaOp('getPinePollenRiskIdxV3', regionCode, time),
+    fetchKmaOp('getWeedsPollenRiskndxV3', regionCode, time),
     fetchGoogle(sLat, sLng),
   ]);
 

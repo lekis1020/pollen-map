@@ -17,7 +17,12 @@ const TREE = {
 // 네이버 지도 API 최소 목.
 // panoramaFails: 로드뷰가 없는 지점을 재현한다. 실제 코드는 후보 9곳을
 // 모두 시도하고 전부 실패하면 error 상태로 떨어진다.
-function installNaverMock({ panoId = '6_XH7ynPhSmJkdQrPCKLMA', pov, panoramaFails = false } = {}) {
+function installNaverMock({
+  panoId = '6_XH7ynPhSmJkdQrPCKLMA',
+  pov,
+  panoramaFails = false,
+  position,
+} = {}) {
   const listeners = [];
   const noop = class { constructor() {} setMap() {} fitBounds() {} };
   const miniMaps = [];
@@ -27,7 +32,10 @@ function installNaverMock({ panoId = '6_XH7ynPhSmJkdQrPCKLMA', pov, panoramaFail
       if (panoramaFails) throw new Error('no panorama here');
       this.pov = pov ?? { pan: 0, tilt: 0, fov: 80 };
     }
-    getPosition() { return { lat: () => 37.5699122, lng: () => 126.9768465 }; }
+    getPosition() {
+      const p = position ?? { lat: 37.5699122, lng: 126.9768465 };
+      return { lat: () => p.lat, lng: () => p.lng };
+    }
     getLocation() {
       return { panoId, address: '서울 종로구 세종로', photodate: '2026-04-13 09:56:32' };
     }
@@ -81,6 +89,31 @@ afterEach(() => {
   cleanup();
   delete window.naver;
   vi.clearAllMocks();
+});
+
+describe('로드뷰 촬영 지점까지의 거리', () => {
+  it('기본 목 좌표는 11m로 반올림되고 위치 일치다', () => {
+    const mock = installNaverMock();
+    render(<StreetViewModal treeData={TREE} onClose={() => {}} />);
+    mock.settle();
+    expect(screen.getByLabelText('검증 상태: 위치 일치')).toBeInTheDocument();
+    expect(screen.getByText('로드뷰가 가로수 위치와 일치합니다. (오차 11m)')).toBeInTheDocument();
+  });
+
+  it('180m는 검증 필요, 400m 오프셋은 401m로 위치 불일치다', () => {
+    const near = installNaverMock({ position: { lat: 37.57 + 180 / 111000, lng: 126.9769 } });
+    render(<StreetViewModal treeData={TREE} onClose={() => {}} />);
+    near.settle();
+    expect(screen.getByLabelText('검증 상태: 검증 필요')).toBeInTheDocument();
+    expect(screen.getByText(/약 180m 떨어져/)).toBeInTheDocument();
+    cleanup();
+
+    const far = installNaverMock({ position: { lat: 37.57 + 400 / 111000, lng: 126.9769 } });
+    render(<StreetViewModal treeData={TREE} onClose={() => {}} />);
+    far.settle();
+    expect(screen.getByLabelText('검증 상태: 위치 불일치')).toBeInTheDocument();
+    expect(screen.getByText(/약 401m 떨어져/)).toBeInTheDocument();
+  });
 });
 
 describe('네이버 지도에서 로드뷰 이어 보기', () => {

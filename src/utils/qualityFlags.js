@@ -7,6 +7,7 @@
 import { canonicalizeSpecies } from '../data/speciesCanonical.js';
 import { getAllergenMatch } from '../data/allergenDatabase.js';
 import { isInKorea, haversineKm } from './coordRepair.js';
+import { sanitizeRoadName } from './junkText.js';
 
 export const FLAG = {
   // 전국 소스
@@ -58,7 +59,7 @@ export const SIDO_BOUNDS = {
   제주: [33.05, 33.62, 126.10, 126.99],
 };
 
-const SIDO_ALIAS = {
+export const SIDO_ALIAS = {
   서울특별시: '서울', 인천광역시: '인천', 경기도: '경기',
   강원특별자치도: '강원', 강원도: '강원', 충청북도: '충북', 충청남도: '충남',
   대전광역시: '대전', 세종특별자치시: '세종', 전북특별자치도: '전북',
@@ -66,8 +67,6 @@ const SIDO_ALIAS = {
   대구광역시: '대구', 경상남도: '경남', 부산광역시: '부산',
   울산광역시: '울산', 제주특별자치도: '제주', 제주도: '제주',
 };
-
-const JUNK_ONLY = /^[\s0-9?×xX\-.]*$/;
 
 // 직선거리가 신고 연장보다 이 배율 이상 길면 물리적으로 불가능하다고 본다.
 // 측정 오차·좌표 반올림을 감안해 15% 여유를 둔다.
@@ -144,8 +143,7 @@ export function flagSeoulTree(tree, { stackedCount = 1 } = {}) {
   if (canon.kind === 'not-a-tree') flags.push(FLAG.NOT_A_TREE);
   else if (canon.kind === 'unknown') flags.push(FLAG.SPECIES_INVALID);
 
-  const road = String(tree.road || '').trim();
-  if (!road || JUNK_ONLY.test(road)) flags.push(FLAG.ROAD_INVALID);
+  if (!sanitizeRoadName(tree.road)) flags.push(FLAG.ROAD_INVALID);
 
   if (decimalsOf(tree.lat) < MIN_COORD_DECIMALS) flags.push(FLAG.COORD_LOW_PRECISION);
   if (stackedCount >= STACKED_THRESHOLD) flags.push(FLAG.COORD_STACKED);

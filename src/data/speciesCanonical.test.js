@@ -59,8 +59,17 @@ describe('canonicalizeSpecies', () => {
     expect(canonicalizeSpecies('1111').kind).toBe('unknown');
     expect(canonicalizeSpecies('×').kind).toBe('unknown');
     expect(canonicalizeSpecies('?').kind).toBe('unknown');
+    expect(canonicalizeSpecies('x').kind).toBe('unknown');
+    expect(canonicalizeSpecies('X').kind).toBe('unknown');
+    expect(canonicalizeSpecies('-').kind).toBe('unknown');
+    expect(canonicalizeSpecies('.').kind).toBe('unknown');
+    expect(canonicalizeSpecies('   ').kind).toBe('unknown');
+    expect(canonicalizeSpecies('  12  ').kind).toBe('unknown');
     expect(canonicalizeSpecies(null).kind).toBe('unknown');
     expect(canonicalizeSpecies(undefined).kind).toBe('unknown');
+    // nullish만 빈 문자열로 본다. false는 "false"라는 토큰이 된다.
+    expect(canonicalizeSpecies(false)).toMatchObject({ species: ['false'], kind: 'tree' });
+    expect(canonicalizeSpecies(0).kind).toBe('unknown');
   });
 
   it('앞뒤에 붙은 숫자 노이즈를 제거한다', () => {

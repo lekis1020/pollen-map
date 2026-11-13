@@ -16,9 +16,10 @@
  * 산출물: api/_lib/__fixtures__/*.json  +  docs/superpowers/notes/pollen-api-discovery.md
  */
 
-import { writeFileSync, mkdirSync, readFileSync, existsSync } from 'node:fs';
+import { writeFileSync, mkdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { loadEnvFile } from './load-env.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '..');
@@ -26,18 +27,7 @@ const FIXTURES = join(ROOT, 'api/_lib/__fixtures__');
 // 확정 스펙 문서(pollen-api-discovery.md)를 덮어쓰지 않도록 실행 로그는 별도 파일에 남긴다.
 const NOTES = join(ROOT, 'docs/superpowers/notes/pollen-discovery-run.md');
 
-// .env 로드 (기존 스크립트와 동일한 방식)
-function loadEnv() {
-  const envPath = join(ROOT, '.env');
-  if (!existsSync(envPath)) return {};
-  const env = {};
-  for (const line of readFileSync(envPath, 'utf-8').split('\n')) {
-    const m = line.match(/^\s*([A-Z_][A-Z0-9_]*)\s*=\s*(.*)\s*$/);
-    if (m) env[m[1]] = m[2].replace(/^["']|["']$/g, '');
-  }
-  return env;
-}
-const env = { ...loadEnv(), ...process.env };
+const env = { ...loadEnvFile(join(ROOT, '.env')), ...process.env };
 const need = (k) => {
   const v = (env[k] || '').trim();
   if (!v || v.startsWith('your_')) throw new Error(`env ${k} 가 필요합니다 (.env 확인)`);
