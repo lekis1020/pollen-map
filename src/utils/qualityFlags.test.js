@@ -115,4 +115,65 @@ describe('flagSeoulTree', () => {
     expect(flagSeoulTree(OK_TREE, { stackedCount: 89 })).toContain(FLAG.COORD_STACKED);
     expect(flagSeoulTree(OK_TREE, { stackedCount: 2 })).not.toContain(FLAG.COORD_STACKED);
   });
+
+  it('도로명 잡값은 공백·기호·숫자만 있는 경우다', () => {
+    for (const road of ['×', '?', 'x', '  12  ', '   ', '-']) {
+      expect(flagSeoulTree({ ...OK_TREE, road })).toContain(FLAG.ROAD_INVALID);
+    }
+    expect(flagSeoulTree({ ...OK_TREE, road: '  테헤란로  ' })).not.toContain(FLAG.ROAD_INVALID);
+  });
+});
+
+describe('flagNationwideRecord — 시도 별칭', () => {
+  // 기관명 첫 토큰을 짧은 시도명으로 줄인 뒤 경계 상자를 본다.
+  // 상자는 [latMin, latMax, lngMin, lngMax].
+  const INSIDE = {
+    서울특별시: [37.55, 126.98],
+    인천광역시: [37.45, 126.7],
+    경기도: [37.4, 127.0],
+    강원특별자치도: [37.8, 128.2],
+    강원도: [37.8, 128.2],
+    충청북도: [36.6, 127.8],
+    충청남도: [36.5, 126.8],
+    대전광역시: [36.35, 127.4],
+    세종특별자치시: [36.5, 127.28],
+    전북특별자치도: [35.8, 127.1],
+    전라북도: [35.8, 127.1],
+    전라남도: [34.8, 126.9],
+    광주광역시: [35.15, 126.85],
+    경상북도: [36.5, 128.7],
+    대구광역시: [36.2, 128.5],
+    경상남도: [35.2, 128.2],
+    부산광역시: [35.1, 129.05],
+    울산광역시: [35.5, 129.2],
+    제주특별자치도: [33.4, 126.5],
+    제주도: [33.4, 126.5],
+  };
+
+  function recordAt(institution, lat, lng) {
+    return flagNationwideRecord({
+      ...OK_RECORD,
+      institutionNm: `${institution} 기관`,
+      startLatitude: String(lat),
+      startLongitude: String(lng),
+      endLatitude: String(lat + 0.001),
+      endLongitude: String(lng + 0.001),
+      sttreeStretLt: '5',
+    });
+  }
+
+  it('별칭이 가리키는 상자 안의 좌표는 관할 이탈이 아니다', () => {
+    for (const [name, [lat, lng]] of Object.entries(INSIDE)) {
+      expect(recordAt(name, lat, lng), name).not.toContain(FLAG.COORD_WRONG_REGION);
+    }
+  });
+
+  it('다른 시도 좌표면 관할 이탈이다', () => {
+    expect(recordAt('서울특별시', 35.1, 129.05)).toContain(FLAG.COORD_WRONG_REGION);
+    expect(recordAt('제주도', 37.55, 126.98)).toContain(FLAG.COORD_WRONG_REGION);
+  });
+
+  it('상자가 없는 기관명은 관할 이탈로 보지 않는다', () => {
+    expect(recordAt('해외시', 37.55, 126.98)).not.toContain(FLAG.COORD_WRONG_REGION);
+  });
 });
