@@ -169,8 +169,12 @@ describe('flagNationwideRecord — 시도 별칭', () => {
   });
 
   it('다른 시도 좌표면 관할 이탈이다', () => {
-    expect(recordAt('서울특별시', 35.1, 129.05)).toContain(FLAG.COORD_WRONG_REGION);
-    expect(recordAt('제주도', 37.55, 126.98)).toContain(FLAG.COORD_WRONG_REGION);
+    // 상자 안 좌표만 보면 별칭이 빠져도 플래그가 안 붙어 통과한다.
+    // 제주(33.4, 126.5)는 육지 상자 밖이고, 서울(37.55, 126.98)은 제주 상자 밖이다.
+    for (const name of Object.keys(INSIDE)) {
+      const [lat, lng] = name.startsWith('제주') ? [37.55, 126.98] : [33.4, 126.5];
+      expect(recordAt(name, lat, lng), name).toContain(FLAG.COORD_WRONG_REGION);
+    }
   });
 
   it('상자가 없는 기관명은 관할 이탈로 보지 않는다', () => {

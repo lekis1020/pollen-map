@@ -1,15 +1,19 @@
 import { describe, it, expect } from 'vitest';
-import { isInKorea, repairCoordinate, haversineKm } from './coordRepair.js';
+import { isInKorea, repairCoordinate, haversineKm, haversineMeters } from './coordRepair.js';
 
 describe('haversineKm', () => {
   it('같은 점은 0이다', () => {
     expect(haversineKm(37.5, 127.0, 37.5, 127.0)).toBe(0);
   });
 
-  it('서울시청~강남역은 대략 7~10km다', () => {
-    const d = haversineKm(37.5665, 126.9780, 37.4979, 127.0276);
-    expect(d).toBeGreaterThan(7);
-    expect(d).toBeLessThan(10);
+  // 7~10km처럼 넓은 구간은 반지름 6371을 7000으로 바꿔도 통과한다.
+  // 서울시청~강남역은 반지름 6371에서의 거리로 고정한다.
+  it('서울시청~강남역은 반지름 6371km의 거리다', () => {
+    expect(haversineKm(37.5665, 126.9780, 37.4979, 127.0276)).toBeCloseTo(8.792890880750395, 6);
+  });
+
+  it('같은 구간을 미터로 재면 반지름 6371000m다', () => {
+    expect(haversineMeters(37.5665, 126.9780, 37.4979, 127.0276)).toBeCloseTo(8792.890880750394, 6);
   });
 });
 

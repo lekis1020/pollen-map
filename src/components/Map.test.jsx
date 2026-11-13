@@ -11,6 +11,9 @@ function installNaverMock() {
   const listeners = [];
   const infoWindows = [];
   const mapInstances = [];
+  const markers = [];
+  const centers = [];
+  const zooms = [];
   const trigger = vi.fn();
 
   class InfoWindow {
@@ -30,9 +33,12 @@ function installNaverMock() {
     Map: class {
       constructor() { this.zoom = 7; mapInstances.push(this); }
       getBounds() { return { minY: () => 37.4, maxY: () => 37.6, minX: () => 126.9, maxX: () => 127.1 }; }
-      setCenter() {} setZoom() {} getZoom() { return this.zoom; } panBy() {}
+      setCenter(c) { centers.push(c); }
+      setZoom(z) { this.zoom = z; zooms.push(z); }
+      getZoom() { return this.zoom; }
+      panBy() {}
     },
-    Marker: class { constructor(o) { Object.assign(this, o); } setMap() {} getElement() { return null; } },
+    Marker: class { constructor(o) { Object.assign(this, o); markers.push(this); } setMap() {} getElement() { return null; } },
     Polyline: noop,
     Circle: noop,
     InfoWindow,
@@ -55,6 +61,9 @@ function installNaverMock() {
     listeners,
     infoWindows,
     mapInstances,
+    markers,
+    centers,
+    zooms,
     trigger,
     fire(type, arg, index = 0) {
       const matched = listeners.filter((l) => l.type === type);
@@ -392,5 +401,73 @@ describe('팝업 제보 링크', () => {
     const iw = naver.infoWindows[naver.infoWindows.length - 1];
     expect(reportLinks(iw)).toHaveLength(3);
     expect(decodeURIComponent(reportLinks(iw)[1].getAttribute('href'))).toContain('식재본수: 12본');
+  });
+});
+
+describe('IP 위치 30km 군집', () => {
+  // 37.5,127에서 정북. 반지름 6371km로 29.9km, 30.1km이다.
+  const NORTH_29_9 = 37.7688971601697;
+  const NORTH_30_1 = 37.770695803381535;
+  let failFix = null;
+  let originalGeo;
+
+  beforeEach(() => {
+    originalGeo = navigator.geolocation;
+    failFix = null;
+    Object.defineProperty(navigator, 'geolocation', {
+      configurable: true,
+      value: {
+        getCurrentPosition: (_ok, err) => { failFix = err; },
+      },
+    });
+  });
+
+  afterEach(() => {
+    if (originalGeo === undefined) {
+      delete navigator.geolocation;
+    } else {
+      Object.defineProperty(navigator, 'geolocation', { configurable: true, value: originalGeo });
+    }
+    vi.unstubAllGlobals();
+  });
+
+  function ipFetch(secondLat) {
+    vi.stubGlobal('fetch', vi.fn(async (url) => {
+      const href = String(url);
+      if (href.includes('ipapi.co')) {
+        return { ok: true, json: async () => ({ latitude: 37.5, longitude: 127, city: '서울', region: '서울' }) };
+      }
+      if (href.includes('ipwho.is')) {
+        return { ok: true, json: async () => ({ latitude: secondLat, longitude: 127, city: '북쪽', region: '경기' }) };
+      }
+      if (href.includes('geojs.io')) return { ok: false, status: 500, json: async () => ({}) };
+      throw new Error(href);
+    }));
+  }
+
+  async function failGps() {
+    render(<Map data={[]} geo={{ coords: null, accuracy: null, status: 'error', request: () => {} }} />);
+    await act(async () => { await failFix({ code: 2 }); });
+  }
+
+  it('30km 안의 두 소스는 중심점으로 평균한다', async () => {
+    ipFetch(NORTH_29_9);
+    await failGps();
+
+    expect(screen.getByText(/2개 소스 평균/)).toBeInTheDocument();
+    const marker = naver.markers[naver.markers.length - 1];
+    expect(marker.position.lat()).toBeCloseTo((37.5 + NORTH_29_9) / 2, 6);
+    expect(marker.position.lng()).toBeCloseTo(127, 6);
+    expect(naver.zooms).toContain(11);
+  });
+
+  it('30km를 넘는 두 소스는 묶지 않고 한 소스를 쓴다', async () => {
+    ipFetch(NORTH_30_1);
+    await failGps();
+
+    expect(screen.getByText(/단일 소스/)).toBeInTheDocument();
+    const marker = naver.markers[naver.markers.length - 1];
+    expect(marker.position.lat()).toBeCloseTo(37.5, 6);
+    expect(marker.position.lng()).toBeCloseTo(127, 6);
   });
 });
