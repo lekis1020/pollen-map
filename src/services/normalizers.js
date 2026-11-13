@@ -52,6 +52,7 @@ export function normalizeStreetTree(item) {
   const rawSpecies = item.speciesNm || item.sttreeKnd || '';
   const canon = canonicalizeSpecies(rawSpecies);
   const roadName = sanitizeRoadName(item.roadsidTreeRoadNm || item.sttreeStretNm);
+  const count = parseInt(item.pltngCo || item.sttreeCo, 10) || 0;
 
   return {
     id: `streetTree_${++idCounter}_${centerLat}_${centerLng}`,
@@ -65,8 +66,8 @@ export function normalizeStreetTree(item) {
     speciesList: canon.species,    // 정규화·분해 결과
     speciesKind: canon.kind,
     qualityFlags: [],              // api.js가 오버레이에서 채운다
-    treeCount: parseInt(item.pltngCo || item.sttreeCo, 10) || 0,
-    plantCount: parseInt(item.pltngCo || item.sttreeCo, 10) || 0,
+    treeCount: count,
+    plantCount: count,
     latitude: centerLat,
     longitude: centerLng,
     institution: item.institutionNm || item.insttNm || '',
