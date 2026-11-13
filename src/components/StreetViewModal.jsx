@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
+import { haversineMeters } from '../utils/coordRepair.js';
 import { compareTimeline, compareRoadName } from '../utils/roadviewCheck.js';
 import { naverPanoramaUrl } from '../utils/naverLinks.js';
 import { buildReportContext, reportMailHref, reportGithubHref, reportXHref } from '../utils/reportLinks.js';
@@ -6,17 +7,6 @@ import './StreetViewModal.css';
 
 // 로드뷰가 없을 때 위성 지도의 기본 배율. 건물 하나가 아니라 블록이 보이는 수준.
 const FALLBACK_ZOOM = 17;
-
-const EARTH_RADIUS_M = 6371000;
-function haversineMeters(lat1, lng1, lat2, lng2) {
-  const toRad = (d) => (d * Math.PI) / 180;
-  const dLat = toRad(lat2 - lat1);
-  const dLng = toRad(lng2 - lng1);
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
-  return 2 * EARTH_RADIUS_M * Math.asin(Math.sqrt(a));
-}
 
 const ICONS = {
   check: (

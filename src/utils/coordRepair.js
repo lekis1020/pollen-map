@@ -10,6 +10,7 @@
 
 const KOREA_BOUNDS = { latMin: 33.0, latMax: 38.7, lngMin: 124.5, lngMax: 132.0 };
 const EARTH_RADIUS_KM = 6371;
+const EARTH_RADIUS_M = 6371000;
 const DEFAULT_MAX_DISTANCE_KM = 5;
 
 export function isInKorea(lat, lng) {
@@ -22,13 +23,21 @@ export function isInKorea(lat, lng) {
 
 const toRad = (deg) => (deg * Math.PI) / 180;
 
-export function haversineKm(lat1, lng1, lat2, lng2) {
+function haversine(lat1, lng1, lat2, lng2, radius) {
   const dLat = toRad(lat2 - lat1);
   const dLng = toRad(lng2 - lng1);
   const a =
     Math.sin(dLat / 2) ** 2 +
     Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
-  return 2 * EARTH_RADIUS_KM * Math.asin(Math.sqrt(a));
+  return 2 * radius * Math.asin(Math.sqrt(a));
+}
+
+export function haversineKm(lat1, lng1, lat2, lng2) {
+  return haversine(lat1, lng1, lat2, lng2, EARTH_RADIUS_KM);
+}
+
+export function haversineMeters(lat1, lng1, lat2, lng2) {
+  return haversine(lat1, lng1, lat2, lng2, EARTH_RADIUS_M);
 }
 
 // 문자열의 각 숫자 자리를 0~9로 한 번씩 치환한 모든 변형을 만든다.
