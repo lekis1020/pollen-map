@@ -14,9 +14,10 @@
  * 갱신 주기: 원본이 자주 바뀌지 않으므로 분기 1회 재실행이면 충분.
  */
 
-import { writeFileSync, readFileSync, existsSync } from 'node:fs';
+import { writeFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { loadEnvFile } from './load-env.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '..');
@@ -24,18 +25,7 @@ const OUT = join(ROOT, 'public/data/sttree-roads.json');
 const API = 'https://api.data.go.kr/openapi/tn_pubr_public_sttree_stret_api';
 const PAGE_SIZE = 1000;
 
-function loadEnv() {
-  const envPath = join(ROOT, '.env');
-  if (!existsSync(envPath)) return {};
-  const env = {};
-  for (const line of readFileSync(envPath, 'utf-8').split('\n')) {
-    const m = line.match(/^\s*([A-Z_][A-Z0-9_]*)\s*=\s*(.*)\s*$/);
-    if (m) env[m[1]] = m[2].replace(/^["']|["']$/g, '');
-  }
-  return env;
-}
-
-const env = { ...loadEnv(), ...process.env };
+const env = { ...loadEnvFile(join(ROOT, '.env')), ...process.env };
 const key = (env.VITE_DATA_API_KEY || '').trim();
 if (!key || key.startsWith('your_')) {
   console.error('env VITE_DATA_API_KEY 가 필요합니다 (.env 확인)');

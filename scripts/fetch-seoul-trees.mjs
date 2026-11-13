@@ -4,27 +4,16 @@
 // 사용: SEOUL_API_KEY=xxxx node scripts/fetch-seoul-trees.mjs
 //      또는 .env 에 SEOUL_API_KEY 지정 후 실행
 
-import { writeFileSync, mkdirSync, readFileSync, existsSync } from 'node:fs';
+import { writeFileSync, mkdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { loadEnvFile } from './load-env.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '..');
 const OUT_PATH = join(ROOT, 'public/data/seoul-trees.json');
 
-// .env 로드 (SEOUL_API_KEY 찾기)
-function loadEnv() {
-  const envPath = join(ROOT, '.env');
-  if (!existsSync(envPath)) return {};
-  const env = {};
-  for (const line of readFileSync(envPath, 'utf-8').split('\n')) {
-    const m = line.match(/^\s*([A-Z_][A-Z0-9_]*)\s*=\s*(.*)\s*$/);
-    if (m) env[m[1]] = m[2].replace(/^["']|["']$/g, '');
-  }
-  return env;
-}
-
-const env = loadEnv();
+const env = loadEnvFile(join(ROOT, '.env'));
 const API_KEY = process.env.SEOUL_API_KEY || env.SEOUL_API_KEY;
 if (!API_KEY) {
   console.error('SEOUL_API_KEY 가 없습니다. .env 혹은 환경변수로 지정하세요.');
